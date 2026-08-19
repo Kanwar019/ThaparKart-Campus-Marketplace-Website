@@ -1,0 +1,147 @@
+
+
+@layer components {
+    .all-\[unset\] {
+        all: unset;
+    }
+}
+
+:root {
+    --inter-bold-font-family: "Inter", Helvetica;
+    --inter-bold-font-size: 20px;
+    --inter-bold-font-style: normal;
+    --inter-bold-font-weight: 700;
+    --inter-bold-letter-spacing: 0px;
+    --inter-bold-line-height: normal;
+    --inter-regular-font-family: "Inter", Helvetica;
+    --inter-regular-font-size: 13px;
+    --inter-regular-font-style: normal;
+    --inter-regular-font-weight: 400;
+    --inter-regular-letter-spacing: 0px;
+    --inter-regular-line-height: normal;
+    --semantic-button-font-family: "Arial", Helvetica;
+    --semantic-button-font-size: 13.300000190734863px;
+    --semantic-button-font-style: normal;
+    --semantic-button-font-weight: 400;
+    --semantic-button-letter-spacing: 0px;
+    --semantic-button-line-height: normal;
+    --semantic-heading-2-font-family: "Inter", Helvetica;
+    --semantic-heading-2-font-size: 16px;
+    --semantic-heading-2-font-style: normal;
+    --semantic-heading-2-font-weight: 600;
+    --semantic-heading-2-letter-spacing: 0px;
+    --semantic-heading-2-line-height: 20px;
+    --semantic-input-font-family: "Inter", Helvetica;
+    --semantic-input-font-size: 16px;
+    --semantic-input-font-style: normal;
+    --semantic-input-font-weight: 400;
+    --semantic-input-letter-spacing: 0px;
+    --semantic-input-line-height: normal;
+}
+
+:root {
+    --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+    animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-fade-up {
+    animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-marquee {
+    animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+    animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+    animation: var(--animate-spin);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+@keyframes image-glow {
+    0% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+    }
+
+    10% {
+        opacity: 0.7;
+        animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+    }
+
+    to {
+        opacity: 0.4;
+    }
+}
+
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fade-up {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes shimmer {
+    0%,
+    90%,
+    to {
+        background-position: calc(-100% - var(--shimmer-width)) 0;
+    }
+
+    30%,
+    60% {
+        background-position: calc(100% + var(--shimmer-width)) 0;
+    }
+}
+
+@keyframes marquee {
+    0% {
+        transform: translate(0);
+    }
+
+    to {
+        transform: translateX(calc(-100% - var(--gap)));
+    }
+}
+
+@keyframes marquee-vertical {
+    0% {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(calc(-100% - var(--gap)));
+    }
+}

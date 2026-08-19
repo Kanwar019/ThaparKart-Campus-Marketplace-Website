@@ -1,0 +1,133 @@
+
+
+/* Source: /mnt/data/5ed0ef6d-fd7f-48c5-9836-2f4c77531cf1.css. :contentReference[oaicite:1]{index=1} */
+
+.shopWithLogin {
+  @apply w-full relative bg-white overflow-hidden text-left text-[20px] text-black;
+  height: 3438px;
+  font-family: Inter, sans-serif;
+}
+
+.headerWithImage {
+  @apply absolute top-0 left-0 w-full overflow-hidden text-center text-[64px];
+  height: 720px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: top;
+  color: #ca0303;
+}
+
+.dimmer {
+  @apply absolute top-0 left-0 w-[100.28%];
+  height: 720px;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.copy4 {
+  @apply absolute flex flex-col items-center gap-10;
+  top: 284px;
+  left: calc(50% - 422px);
+  width: 844px;
+}
+
+.pageTitle {
+  @apply w-full flex flex-col items-start gap-4;
+}
+
+.thaparkartMarketplace {
+  @apply w-full;
+  letter-spacing: -0.02em;
+  line-height: 140%;
+}
+
+.kartMarketplace { color: #fff; }
+
+.discoverBuyAnd { @apply text-[24px] font-medium text-white; line-height: 140%; }
+
+.buttonParent { @apply flex items-start gap-10 text-left text-[24px] text-white; }
+
+.button { @apply flex items-center px-8 py-5 rounded-[20px] cursor-pointer; background-color: #000; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.button2 { @apply flex items-center px-8 py-5 rounded-[20px] cursor-pointer; background-color: rgba(0,0,0,0.32); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.navigation { @apply absolute top-0 left-0 w-[99.86%] text-white overflow-hidden; height: 164px; }
+
+.items { @apply absolute flex items-center justify-end gap-12; top: 56px; right: 80px; }
+
+.searchParent { @apply flex items-center justify-between border border-white rounded-[20px] px-3 py-1 gap-5; width: 410px; }
+
+.button3 { @apply flex items-center justify-center rounded-[20px] border border-white px-6 py-3 text-[16px] cursor-pointer; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.05)); }
+
+.newArrivals { @apply absolute text-[48px] font-semibold; top: 1553px; left: 62px; letter-spacing: -0.02em; width: 1282px; }
+
+.imageContainer { @apply absolute cursor-pointer; width: 50.97%; top: 1659px; left: 4.29%; right: 44.73%; height: 863px; }
+
+.imageIcon3 { @apply absolute w-full rounded-lg overflow-hidden; height: 735px; object-fit: cover; }
+
+.copy3 { @apply absolute w-full flex flex-col items-start justify-center gap-1; top: 759px; }
+
+.secondHandBooks { @apply text-[24px] font-medium leading-[150%]; }
+
+.dataStructuresThermodynamic { @apply leading-[150%] text-[#828282]; }
+
+.imageParent,
+.imageGroup { @apply absolute cursor-pointer; right: 6.79%; left: 57.49%; }
+.imageParent { @apply flex items-start p-2 gap-2; top: 1659px; height: 411.5px; }
+.imageGroup { top: 2110.5px; height: 397.5px; }
+
+.imageIcon,
+.imageIcon2 { @apply absolute w-full rounded-lg overflow-hidden; height: 283.5px; object-fit: cover; }
+
+.copy,
+.copy2 { @apply absolute w-full flex flex-col items-start justify-center gap-1; }
+
+.copyParent { @apply absolute flex items-center gap-[183px] text-[24px]; top: 1234px; left: 8%; width: 84.29%; height: 228px; }
+
+.copy5,
+.copy6 { @apply absolute flex flex-col items-start justify-center gap-6; width: 42.46%; }
+
+.copy6 { left: 0; }
+.copy5 { right: 0; }
+
+.justListed { @apply text-[40px] font-semibold leading-[120%]; }
+
+.buttons { @apply relative cursor-pointer text-white; width: 140px; height: 60px; }
+
+.button4 { @apply absolute top-0 left-0 flex items-center px-6 py-3 rounded-[20px]; background-color: #000; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.buttons2 { @apply grid rounded-[20px] text-white; width: 453px; height: 60px; }
+
+.button6 { @apply absolute flex items-center px-6 py-3 rounded-[20px] cursor-pointer text-black; top: 0; left: 191.5px; background-color: #e6e6e6; }
+
+.exploreCategories { @apply absolute text-[48px] font-semibold; top: 2672px; left: 61.06px; letter-spacing: -0.02em; }
+
+.list,
+.list2 { @apply absolute flex flex-col items-start gap-12 text-[24px]; top: 2778px; }
+.list { width: 35.81%; left: 4.25%; right: 59.94%; }
+.list2 { width: 35.72%; left: 57.31%; right: 6.98%; }
+
+.copy7,
+.copy9 { @apply flex flex-col items-start gap-2; }
+
+.findLaptopsEarphones { @apply text-[20px] leading-[150%] text-[#828282]; }
+
+.navigationFooter { @apply absolute bg-white text-[#454545] text-[16px] overflow-hidden; top: 3174px; left: -1.25%; width: 99.86%; height: 264px; }
+
+.divider { @apply absolute left-[79.5px] border-t border-[#e6e6e6]; top: 0.5px; width: 1281px; }
+
+.items2,
+.items3,
+.items4 { @apply absolute flex flex-col items-end justify-center gap-6; top: 48px; width: 187px; }
+.items2 { right: 516px; }
+.items3 { right: 297px; }
+.items4 { right: 80px; }
+
+.topic { @apply w-full font-medium leading-[150%] text-black; }
+
+.thaparkart2 { @apply absolute text-[24px] leading-[150%]; top: 52px; left: 80px; color: #ca0303; }
+
+.kart2 { color: #000; }
+
+.socialIcons { @apply absolute flex items-start gap-2; top: 176px; left: 80px; }
+
+.buttonsIcon { @apply w-10 h-10 rounded; object-fit: cover; }
