@@ -205,22 +205,22 @@ export const LandingPage = ({ loggedIn }) => {
         </section>
 
         {/* WHY CHOOSE ThaparKart */}
-        <section className="w-[90%] mx-auto pt-12 pb-8 md:pt-14 md:pb-10 lg:pt-16 lg:pb-12">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
+        <section className="w-[90%] mx-auto pt-12 pb-10 md:pt-14 md:pb-12 lg:pt-16 lg:pb-14">
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-center lg:items-start justify-between">
             {/* Text side */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-10">
+            <div className="w-full lg:w-[52%] flex flex-col gap-8 md:gap-10">
               <p className="font-semibold text-3xl md:text-4xl lg:text-5xl">
                 <span className="text-black">Why Choose </span>
                 <span className="text-[#c90202]">Thapar</span>
                 <span className="text-black">Kart?</span>
               </p>
 
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-6 md:gap-8">
                 <div>
                   <div className="font-medium text-black text-xl md:text-2xl mb-2">
                     By Students, For Students
                   </div>
-                  <p className="text-[#828282] text-base md:text-2xl">
+                  <p className="text-[#828282] text-base md:text-xl lg:text-2xl">
                     Built to make buying and selling safer, faster, and easier
                     for Thaparians.
                   </p>
@@ -230,7 +230,7 @@ export const LandingPage = ({ loggedIn }) => {
                   <div className="font-medium text-black text-xl md:text-2xl mb-2">
                     Eco-Friendly &amp; Affordable
                   </div>
-                  <p className="text-[#828282] text-base md:text-2xl">
+                  <p className="text-[#828282] text-base md:text-xl lg:text-2xl">
                     Encouraging reuse and reducing waste, while helping you save
                     money.
                   </p>
@@ -240,44 +240,45 @@ export const LandingPage = ({ loggedIn }) => {
                   <div className="font-medium text-black text-xl md:text-2xl mb-2">
                     Community Driven
                   </div>
-                  <p className="text-[#828282] text-base md:text-2xl">
+                  <p className="text-[#828282] text-base md:text-xl lg:text-2xl">
                     Verified users, secure listings, and a trustworthy
                     marketplace experience.
                   </p>
                 </div>
               </div>
+
+              {/* Action buttons positioned within the left column */}
+              <div className="flex flex-row flex-wrap items-center gap-4 sm:gap-6 pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(isLogged ? "/shop-login" : "/shop")}
+                  className="inline-flex px-6 py-3 bg-black items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
+                >
+                  <span className="font-medium text-white text-xl md:text-2xl">
+                    Start Shopping
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(isLogged ? "/create-listing-login" : "/login")}
+                  className="inline-flex px-6 py-3 bg-[#e6e6e6] items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#d0d0d0] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
+                >
+                  <span className="font-medium text-black text-xl md:text-2xl">
+                    Sell an Item
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Image side */}
-            <div
-              className="w-full lg:w-[41.3%] min-h-[320px] lg:min-h-[500px] rounded-[20px] shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
-              style={{ backgroundImage: `url(${image6})` }}
-            />
-          </div>
-        </section>
-
-        {/* CTA Row: Start Shopping / Sell an Item */}
-        <section className="w-[90%] mx-auto pb-10 md:pb-12">
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/shop-login" : "/shop")}
-              className="flex w-full sm:w-auto px-6 py-3 bg-black items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
-            >
-              <span className="font-medium text-white text-xl md:text-2xl">
-                Start Shopping
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/create-listing-login" : "/login")}
-              className="flex w-full sm:w-auto px-6 py-3 bg-[#e6e6e6] items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#d0d0d0] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
-            >
-              <span className="font-medium text-black text-xl md:text-2xl">
-                Sell an Item
-              </span>
-            </button>
+            <div className="w-full lg:w-[44%] flex items-center justify-center">
+              <img
+                src={image6}
+                alt="Why Choose ThaparKart"
+                className="w-full max-w-[500px] h-auto object-contain rounded-[20px] shadow-[0px_6px_20px_rgba(0,0,0,0.05)]"
+              />
+            </div>
           </div>
         </section>
 
