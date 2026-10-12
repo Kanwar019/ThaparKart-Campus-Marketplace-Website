@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 import "../styles/Admin_Page.css";
 
 export const AdminPage = ({ authorized = true }) => {
@@ -44,6 +44,9 @@ export const AdminPage = ({ authorized = true }) => {
 
         const res = await fetch(`${API_BASE_URL}/api/feedback`, {
           credentials: "include",
+          headers: {
+            ...getAuthHeaders(),
+          },
         });
 
         if (!res.ok) {
@@ -75,6 +78,9 @@ export const AdminPage = ({ authorized = true }) => {
 
         const res = await fetch(`${API_BASE_URL}/api/admin/stats`, {
           credentials: "include",
+          headers: {
+            ...getAuthHeaders(),
+          },
         });
 
         if (!res.ok) {
@@ -108,6 +114,7 @@ export const AdminPage = ({ authorized = true }) => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/listings?limit=2`, {
           credentials: "include",
+          headers: { ...getAuthHeaders() },
         });
 
         if (!res.ok) {
@@ -158,6 +165,9 @@ export const AdminPage = ({ authorized = true }) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/export`, {
         credentials: "include",
+        headers: {
+          ...getAuthHeaders(),
+        },
       });
 
       if (!res.ok) {

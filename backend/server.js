@@ -47,10 +47,23 @@ const envOrigins = [
 
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow local LAN IP origins (e.g. mobile testing on same Wi-Fi)
+  if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+    return true;
+  }
+  return false;
+};
+
 // ✅ Initialize Socket.io with same CORS config
 const io = new IOServer(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   },
 });
@@ -63,10 +76,14 @@ connectDB();
 // Express Middleware
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
+
 
 app.use(
   express.json({

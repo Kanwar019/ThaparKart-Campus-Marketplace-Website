@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 import "../styles/My_Listing.css";
 
 const getStatusStyles = (statusRaw) => {
@@ -36,6 +36,7 @@ export const MyListing = () => {
         // ✅ must match backend: GET /api/listings/mine
         const res = await fetch(`${API_BASE_URL}/api/listings/mine`, {
           credentials: "include",
+          headers: { ...getAuthHeaders() },
         });
 
         if (!res.ok) {
@@ -94,6 +95,7 @@ export const MyListing = () => {
         {
           method: "DELETE",
           credentials: "include",
+          headers: { ...getAuthHeaders() },
         }
       );
 

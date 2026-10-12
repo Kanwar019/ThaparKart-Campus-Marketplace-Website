@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 
 import "../styles/Edit_Listings.css";
 
@@ -28,6 +28,7 @@ export const EditListings = () => {
         setLoadingListing(true);
         const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
           credentials: "include",
+          headers: { ...getAuthHeaders() },
         });
 
         if (res.status === 404) {
@@ -137,6 +138,7 @@ export const EditListings = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         credentials: "include",
         body: JSON.stringify(body),
@@ -167,6 +169,7 @@ export const EditListings = () => {
       const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
         method: "DELETE",
         credentials: "include",
+        headers: { ...getAuthHeaders() },
       });
 
       if (!res.ok) {

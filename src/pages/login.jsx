@@ -73,6 +73,9 @@ export const Login = () => {
       try {
         localStorage.setItem("userEmail", lowerEmail);
         localStorage.setItem("isAdmin", isAdmin ? "true" : "false");
+        if (data.token) {
+          localStorage.setItem("authToken", data.token);
+        }
       } catch (e) {
         console.warn("Could not save to localStorage:", e);
       }

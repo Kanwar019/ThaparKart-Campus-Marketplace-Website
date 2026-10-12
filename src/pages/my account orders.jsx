@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/logout.js";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { AccountSidebar } from "../components/AccountSidebar.jsx";
@@ -47,9 +47,11 @@ export const MyAccountOrders = () => {
         const [profileRes, ordersRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/profile`, {
             credentials: "include",
+            headers: { ...getAuthHeaders() },
           }),
           fetch(`${API_BASE_URL}/api/orders`, {
             credentials: "include",
+            headers: { ...getAuthHeaders() },
           }),
         ]);
 
@@ -110,7 +112,7 @@ export const MyAccountOrders = () => {
 
       const res = await fetch(`${API_BASE_URL}/api/profile`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ name: nameDraft }),
       });

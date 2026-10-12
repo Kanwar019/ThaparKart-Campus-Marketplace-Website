@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 
 import "../styles/Create_a_Listing.css";
 import "../styles/Create_a_Listing_with_Login.css";
@@ -88,6 +88,7 @@ export const CreateListing = ({ loggedIn }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         credentials: "include",
         body: JSON.stringify({

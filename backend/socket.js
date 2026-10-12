@@ -14,11 +14,17 @@ export function configureChatSockets(io) {
     };
     parseCookies(socket.request, response, (error) => {
       if (error) return reject();
+      const token = socket.request.cookies?.token || socket.handshake.auth?.token;
+      if (token && !socket.request.cookies?.token) {
+        if (!socket.request.headers) socket.request.headers = {};
+        socket.request.headers.authorization = `Bearer ${token}`;
+      }
       return authRequired(socket.request, response, () => {
         socket.data.userId = String(socket.request.user._id);
         next();
       });
     });
+
   });
 
   io.on("connection", (socket) => {

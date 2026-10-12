@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 
 import "../styles/Reservation.css";
 
@@ -28,6 +28,7 @@ export const Reservation = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/orders${view === "selling" ? "/selling" : ""}`, {
         credentials: "include", signal,
+        headers: { ...getAuthHeaders() },
       });
       if (response.status === 401) { navigate("/login"); return; }
       if (!response.ok) throw new Error("Could not load reservations. Please refresh.");
@@ -63,7 +64,7 @@ export const Reservation = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/orders/${item.id}/status`, {
         method: "PATCH", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ action, expectedStatus: item.orderStatus }),
       });
       if (response.status === 401) { navigate("/login"); return; }
@@ -108,7 +109,7 @@ export const Reservation = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat/start`, {
         method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ recipientId: item.person._id }),
       });
       if (response.status === 401) { navigate("/login"); return; }

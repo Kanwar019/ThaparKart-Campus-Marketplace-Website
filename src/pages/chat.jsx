@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import BackButton from "../assets/icons/BackButton.svg";
 import avatarImg from "../assets/icons/avatar.svg";
 
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import "../styles/Chat.css";
 
@@ -37,6 +37,7 @@ export const Chat = () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, {
           credentials: "include",
+          headers: { ...getAuthHeaders() },
         });
         if (res.status === 401) {
           navigate("/login", { replace: true });
@@ -75,6 +76,7 @@ export const Chat = () => {
 
           const conversationsRes = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
             credentials: "include",
+            headers: { ...getAuthHeaders() },
           });
           if (conversationsRes.status === 401) {
             navigate("/login", { replace: true });
@@ -103,6 +105,7 @@ export const Chat = () => {
 
           const messagesRes = await fetch(`${API_BASE_URL}/api/chat/messages/${targetId}`, {
             credentials: "include",
+            headers: { ...getAuthHeaders() },
           });
           if (messagesRes.status === 401) {
             navigate("/login", { replace: true });
@@ -140,8 +143,10 @@ export const Chat = () => {
     refreshRef.current = refreshChat;
     void refreshChat();
 
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("authToken") : null;
     const socket = io(API_BASE_URL, {
       withCredentials: true,
+      auth: token ? { token } : undefined,
       transports: ["websocket", "polling"],
     });
 
@@ -220,7 +225,7 @@ export const Chat = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat/send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ chatId, text }),
       });

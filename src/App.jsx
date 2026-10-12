@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "./config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "./config/api.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 
 // --- Lazy imports ---
@@ -81,6 +81,9 @@ function ProtectedAdminPage() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, {
           credentials: "include",
+          headers: {
+            ...getAuthHeaders(),
+          },
         });
 
         if (res.status === 401) {

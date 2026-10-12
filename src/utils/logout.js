@@ -1,8 +1,11 @@
+import { getAuthHeaders } from "../config/api.js";
+
 export async function logout(apiBaseUrl, navigate) {
   try {
     const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
+      headers: { ...getAuthHeaders() },
     });
     if (!response.ok) throw new Error("Logout failed");
   } catch {
@@ -12,6 +15,8 @@ export async function logout(apiBaseUrl, navigate) {
 
   try {
     localStorage.removeItem("isAdmin");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userEmail");
   } catch {
     // Storage may be disabled; the server has already cleared the session cookie.
   }

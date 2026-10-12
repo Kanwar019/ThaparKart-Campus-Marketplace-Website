@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 
 import "../styles/Product_Detail_Page.css";
 import { listingSearchUrl } from "../utils/listingSearch.js";
@@ -172,7 +172,7 @@ export const ProductDetail = ({ loggedIn }) => {
 
       const res = await fetch(`${API_BASE_URL}/api/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ listingId: effectiveListingId }),
       });
@@ -218,7 +218,7 @@ export const ProductDetail = ({ loggedIn }) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat/start`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ recipientId: sellerId }),
       });
