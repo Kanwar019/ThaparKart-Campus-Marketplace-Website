@@ -82,7 +82,12 @@ function ProtectedAdminPage() {
         const data = await res.json();
         const email = data.email || "";
 
-        if (ADMIN_EMAILS.includes(email)) {
+        const isAuthorized =
+          data.isAdmin ||
+          data.role === "admin" ||
+          ADMIN_EMAILS.includes(email.toLowerCase());
+
+        if (isAuthorized) {
           setAllowed(true);
         } else {
           alert("You are not authorised to view the admin page.");

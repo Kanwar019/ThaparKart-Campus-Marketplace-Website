@@ -15,6 +15,10 @@ const listingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance indexes for marketplace discovery
+listingSchema.index({ status: 1, createdAt: -1 });
+listingSchema.index({ user: 1 });
+
 // ✅ Prevent OverwriteModelError on reload
 const Listing =
   mongoose.models.Listing || mongoose.model("Listing", listingSchema);

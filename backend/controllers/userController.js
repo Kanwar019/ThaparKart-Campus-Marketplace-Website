@@ -1,7 +1,8 @@
 // backend/controllers/userController.js
 import User from "../models/User.js";
 import Listing from "../models/Listing.js";
-import bcrypt from "bcryptjs"; // ✅ ADDED: Needed for password hashing
+import Order from "../models/Order.js";
+import bcrypt from "bcryptjs";
 
 // GET /api/profile
 export const getProfile = (req, res) => {
@@ -10,10 +11,19 @@ export const getProfile = (req, res) => {
     return res.status(401).json({ message: "Not authenticated" });
   }
 
-  // ✅ KEPTS YOUR WORKING LOGIC
+  const ADMIN_EMAILS = [
+    "ksingh2_be23@thapar.edu",
+    "ybhansali_be23@thapar.edu",
+  ];
+  const isAdmin =
+    req.user.role === "admin" ||
+    ADMIN_EMAILS.includes(req.user.email?.toLowerCase());
+
   return res.json({
     name: req.user.name || "",
     email: req.user.email || "",
+    role: req.user.role || (isAdmin ? "admin" : "user"),
+    isAdmin,
   });
 };
 
@@ -52,7 +62,10 @@ export const updateProfile = async (req, res) => {
 // GET /api/my-listings
 export const getMyListings = async (req, res) => {
   try {
-    const listings = await Listing.find({ user: req.user._id }).sort({
+    const listings = await Listing.find({
+      user: req.user._id,
+      status: { $ne: "deleted" },
+    }).sort({
       createdAt: -1,
     });
 
@@ -75,15 +88,19 @@ export const getMyListings = async (req, res) => {
   }
 };
 
-// DELETE /api/my-listings/:id
+// DELETE /api/my-listings/:id (soft delete)
 export const deleteMyListing = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deleted = await Listing.findOneAndDelete({
-      _id: id,
-      user: req.user._id, 
-    });
+    const deleted = await Listing.findOneAndUpdate(
+      {
+        _id: id,
+        user: req.user._id,
+      },
+      { status: "deleted" },
+      { new: true }
+    );
 
     if (!deleted) {
       return res.status(404).json({ message: "Listing not found" });
@@ -97,8 +114,24 @@ export const deleteMyListing = async (req, res) => {
 };
 
 // GET /api/my-orders
-export const getMyOrders = (req, res) => {
-  return res.json([]);
+export const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ buyer: req.user._id })
+      .populate({
+        path: "listing",
+        select: "title description price imageUrls user status",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    return res.json(orders);
+  } catch (err) {
+    console.error("Error in getMyOrders:", err);
+    return res.status(500).json({ message: "Server error fetching orders" });
+  }
 };
 
 // ✅ ADDED: Change Password Logic

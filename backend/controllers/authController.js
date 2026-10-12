@@ -1,12 +1,22 @@
 // backend/controllers/authController.js
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import crypto from "crypto";
+import { sendMail } from "../utils/mailer.js";
 
 const JWT_EXPIRES_IN = "7d";
+const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES) || 5;
 const isProduction = process.env.NODE_ENV === "production";
+
+function generateOtpCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function hashOtp(otp) {
+  return crypto.createHash("sha256").update(otp).digest("hex");
+}
 
 export const registerUser = async (req, res) => {
   try {
@@ -51,10 +61,17 @@ export const registerUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const ADMIN_EMAILS = [
+      "ksingh2_be23@thapar.edu",
+      "ybhansali_be23@thapar.edu",
+    ];
+    const role = ADMIN_EMAILS.includes(email.toLowerCase().trim()) ? "admin" : "user";
+
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       passwordHash,
+      role,
     });
 
     return res.status(201).json({
@@ -106,13 +123,22 @@ export const loginUser = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    const ADMIN_EMAILS = [
+      "ksingh2_be23@thapar.edu",
+      "ybhansali_be23@thapar.edu",
+    ];
+    const isAdmin = user.role === "admin" || ADMIN_EMAILS.includes(user.email.toLowerCase());
+
     return res.json({
       message: "Login successful.",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role || (isAdmin ? "admin" : "user"),
+        isAdmin,
       },
+      isAdmin,
       token,
     });
   } catch (err) {
@@ -131,4 +157,110 @@ export const logoutUser = (req, res) => {
   return res.json({ message: "Logged out successfully." });
 };
 
-export default { registerUser, loginUser, logoutUser };
+export const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.endsWith("@thapar.edu")) {
+      return res.status(400).json({ message: "Valid @thapar.edu email required." });
+    }
+
+    const code = generateOtpCode();
+    const otpHash = hashOtp(code);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+
+    // remove prior OTPs for this email and create new
+    await Otp.deleteMany({ email: email.toLowerCase() });
+    await Otp.create({ email: email.toLowerCase(), otpHash, expiresAt });
+
+    // send email
+    const subject = "ThaparKart — Your OTP";
+    const text = `Your ThaparKart OTP is ${code}. It expires in ${OTP_TTL_MINUTES} minute(s).`;
+    const html = `<p>Your ThaparKart OTP is <strong>${code}</strong>.</p><p>It expires in ${OTP_TTL_MINUTES} minute(s).</p>`;
+
+    await sendMail({ to: email, subject, text, html });
+
+    console.log(`OTP sent to ${email} (expires ${expiresAt.toISOString()})`);
+    return res.json({ message: "OTP sent to your email." });
+  } catch (err) {
+    console.error("send-otp error:", err);
+    return res.status(500).json({ message: "Failed to send OTP. Please try again." });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required." });
+    }
+
+    const record = await Otp.findOne({ email: email.toLowerCase() });
+    if (!record) {
+      return res.status(400).json({ message: "No OTP found. Please request a new one." });
+    }
+
+    if (new Date() > record.expiresAt) {
+      await Otp.deleteMany({ email: email.toLowerCase() });
+      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+    }
+
+    const providedHash = hashOtp(otp);
+    if (providedHash !== record.otpHash) {
+      return res.status(400).json({ message: "Incorrect OTP." });
+    }
+
+    // valid -> delete OTP records for this email to prevent reuse
+    await Otp.deleteMany({ email: email.toLowerCase() });
+
+    return res.json({ message: "OTP verified successfully." });
+  } catch (err) {
+    console.error("verify-otp error:", err);
+    return res.status(500).json({ message: "Failed to verify OTP. Please try again." });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // 1. Verify OTP First
+    const record = await Otp.findOne({ email: email.toLowerCase() });
+    if (!record) {
+      return res.status(400).json({ message: "No OTP found. Request a new one." });
+    }
+    if (new Date() > record.expiresAt) {
+      await Otp.deleteMany({ email: email.toLowerCase() });
+      return res.status(400).json({ message: "OTP expired." });
+    }
+    const providedHash = hashOtp(otp);
+    if (providedHash !== record.otpHash) {
+      return res.status(400).json({ message: "Incorrect OTP." });
+    }
+
+    // 2. Find User
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // 3. Hash New Password
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    // 4. Cleanup OTP
+    await Otp.deleteMany({ email: email.toLowerCase() });
+
+    return res.json({ message: "Password reset successfully. Please login." });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return res.status(500).json({ message: "Server error resetting password." });
+  }
+};
+
+export default { registerUser, loginUser, logoutUser, sendOtp, verifyOtp, resetPassword };
+

@@ -10,17 +10,30 @@ export const createListing = async (req, res) => {
       return res.status(400).json({ message: "Title is required." });
     }
 
+    if (title.trim().length > 150) {
+      return res.status(400).json({ message: "Title must be under 150 characters." });
+    }
+
     if (price === undefined || price === null || price === "") {
       return res.status(400).json({ message: "Price is required." });
+    }
+
+    const parsedPrice = Number(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ message: "Price must be a valid non-negative number." });
+    }
+
+    if (parsedPrice > 10000000) {
+      return res.status(400).json({ message: "Price exceeds allowable threshold." });
     }
 
     const listing = await Listing.create({
       user: req.user._id,
       title: title.trim(),
-      description: description?.trim() || "",
-      price: Number(price),
-      category: category || "",
-      condition: condition || "",
+      description: description?.trim() ? description.trim().slice(0, 3000) : "",
+      price: parsedPrice,
+      category: category ? category.trim() : "",
+      condition: condition ? condition.trim() : "",
       imageUrls: Array.isArray(imageUrls)
         ? imageUrls
         : imageUrls
@@ -39,10 +52,49 @@ export const createListing = async (req, res) => {
   }
 };
 
-// GET /api/listings  (public – all active listings)
+// GET /api/listings  (public – active listings with optional server pagination)
 export const getAllListings = async (req, res) => {
   try {
-    const listings = await Listing.find({ status: "active" })
+    const { page, limit = 9, category, search } = req.query;
+
+    const filter = { status: "active" };
+
+    if (category) {
+      filter.category = new RegExp(`^${category.trim()}$`, "i");
+    }
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search.trim(), $options: "i" } },
+        { description: { $regex: search.trim(), $options: "i" } },
+      ];
+    }
+
+    // If client passes page query param, return paginated payload
+    if (page) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 9));
+      const skip = (pageNum - 1) * limitNum;
+
+      const [listings, total] = await Promise.all([
+        Listing.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .populate("user", "name email"),
+        Listing.countDocuments(filter),
+      ]);
+
+      return res.json({
+        listings,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+      });
+    }
+
+    // Backward-compatible fallback for unpaginated frontend calls
+    const listings = await Listing.find(filter)
       .sort({ createdAt: -1 })
       .populate("user", "name email");
 
@@ -131,15 +183,19 @@ export const updateListing = async (req, res) => {
   }
 };
 
-// DELETE /api/listings/:id  (owner only)
+// DELETE /api/listings/:id  (owner only - soft delete)
 export const deleteListing = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deleted = await Listing.findOneAndDelete({
-      _id: id,
-      user: req.user._id,
-    });
+    const deleted = await Listing.findOneAndUpdate(
+      {
+        _id: id,
+        user: req.user._id,
+      },
+      { status: "deleted" },
+      { new: true }
+    );
 
     if (!deleted) {
       return res.status(404).json({ message: "Listing not found" });

@@ -26,23 +26,36 @@ export const createOrder = async (req, res) => {
         .json({ message: "You cannot reserve your own listing." });
     }
 
-    const existing = await Order.findOne({
-      buyer: buyerId,
-      listing: listingId,
-      status: { $ne: "Cancelled" },
-    });
+    // Atomic update: only one request can transition status from 'active' to 'reserved'
+    const reservedListing = await Listing.findOneAndUpdate(
+      { _id: listingId, status: "active" },
+      { status: "reserved" },
+      { new: true }
+    );
 
-    if (existing) {
+    if (!reservedListing) {
       return res
-        .status(400)
-        .json({ message: "You have already reserved this item." });
+        .status(409)
+        .json({ message: "This item is no longer available or has already been reserved." });
     }
 
-    const order = await Order.create({
-      buyer: buyerId,
-      listing: listingId,
-      status: "Reserved",
-    });
+    let order;
+    try {
+      order = await Order.create({
+        buyer: buyerId,
+        listing: listingId,
+        status: "Reserved",
+      });
+    } catch (orderErr) {
+      // Rollback listing status if order creation failed (e.g. duplicate index violation)
+      await Listing.findByIdAndUpdate(listingId, { status: "active" });
+      if (orderErr.code === 11000) {
+        return res
+          .status(409)
+          .json({ message: "This item has already been reserved." });
+      }
+      throw orderErr;
+    }
 
     const populated = await order.populate({
       path: "listing",
