@@ -59,9 +59,18 @@ test("AccountSidebar displays user profile data and standard action options", as
   assert.match(markupLoaded, /aarav@thapar\.edu/);
   assert.match(markupLoaded, /w-\[35%\] bg-white rounded-2xl shadow-md p-6/);
   assert.match(markupLoaded, /Logout/);
-  assert.match(markupLoaded, /Admin Dashboard/);
+  assert.doesNotMatch(markupLoaded, /Admin Dashboard/);
   assert.match(markupLoaded, /My Reservations/);
   assert.match(markupLoaded, /My Listings/);
+
+  // Admin profile verifies Admin Dashboard is visible
+  const markupAdmin = renderToStaticMarkup(
+    React.createElement(AccountSidebar, {
+      profile: { name: "Admin", email: "ksingh2_be23@thapar.edu" },
+      loading: false,
+    })
+  );
+  assert.match(markupAdmin, /Admin Dashboard/);
 
   // Render with loading state
   const markupLoading = renderToStaticMarkup(

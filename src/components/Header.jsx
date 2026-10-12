@@ -36,9 +36,14 @@ export const Header = ({
       typeof localStorage !== "undefined" &&
         (localStorage.getItem("authToken") || localStorage.getItem("userEmail"))
     );
-  const isAdmin =
-    typeof localStorage !== "undefined" &&
-    localStorage.getItem("isAdmin") === "true";
+  const ADMIN_EMAILS = [
+    "ksingh2_be23@thapar.edu",
+    "ybhansali_be23@thapar.edu",
+  ];
+  const userEmail = typeof localStorage !== "undefined" ? localStorage.getItem("userEmail") || "" : "";
+  const isEmailAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()));
+  const isStoredAdmin = typeof localStorage !== "undefined" && localStorage.getItem("isAdmin") === "true";
+  const isAdmin = Boolean(isAuth && (isStoredAdmin || isEmailAdmin));
 
   const handleSearch = () => {
     setMobileMenuOpen(false);

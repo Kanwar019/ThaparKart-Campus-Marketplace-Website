@@ -30,21 +30,6 @@ export const Login = () => {
 
   const navigate = useNavigate();
 
-  // If already logged in, redirect to keep session active
-  useEffect(() => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const savedEmail = localStorage.getItem("userEmail");
-      const isAdmin = localStorage.getItem("isAdmin") === "true";
-      if (token || savedEmail) {
-        if (isAdmin) {
-          navigate("/admin", { replace: true });
-        } else {
-          navigate("/landing-login", { replace: true });
-        }
-      }
-    } catch {}
-  }, [navigate]);
 
   const handleLogin = async () => {
     if (!email.endsWith("@thapar.edu")) {
@@ -96,11 +81,8 @@ export const Login = () => {
         console.warn("Could not save to localStorage:", e);
       }
 
-      if (isAdmin) {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/landing-login", { replace: true });
-      }
+      // Always navigate to the landing page after login, not admin panel
+      navigate("/landing-login", { replace: true });
     } catch (err) {
       console.error("Login network/server error:", err);
       alert("Could not connect to server. Please try again later.");
@@ -188,16 +170,7 @@ export const Login = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => {
-              const token = localStorage.getItem("authToken");
-              const savedEmail = localStorage.getItem("userEmail");
-              const isAdmin = localStorage.getItem("isAdmin") === "true";
-              if (token || savedEmail) {
-                navigate(isAdmin ? "/admin" : "/landing-login");
-              } else {
-                navigate("/landing");
-              }
-            }}
+            onClick={() => navigate("/landing")}
             className="cursor-pointer transition-transform hover:scale-110 p-1"
             aria-label="Back"
           >

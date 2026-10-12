@@ -27,7 +27,9 @@ export const getAuthHeaders = () => {
   try {
     if (typeof localStorage !== "undefined") {
       const token = localStorage.getItem("authToken");
-      if (token) return { Authorization: `Bearer ${token}` };
+      if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
+        return { Authorization: `Bearer ${token}` };
+      }
     }
   } catch {}
   return {};

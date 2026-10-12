@@ -35,7 +35,12 @@ test("logout waits for the credentialed POST before clearing admin state and red
   assert.equal(typeof finish, "function");
   finish({ ok: true });
   await pending;
-  assert.deepEqual(events, [["remove", "isAdmin"], ["navigate", "/login", { replace: true }]]);
+  assert.deepEqual(events, [
+    ["remove", "isAdmin"],
+    ["remove", "authToken"],
+    ["remove", "userEmail"],
+    ["navigate", "/login", { replace: true }],
+  ]);
 });
 
 for (const [name, request] of [

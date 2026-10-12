@@ -5,10 +5,14 @@ import { getJwtSecret } from "../config/auth.js";
 export const authRequired = async (req, res, next) => {
   try {
     const authHeader = req.headers?.authorization;
-    const bearerToken =
+    let bearerToken =
       typeof authHeader === "string" && authHeader.startsWith("Bearer ")
         ? authHeader.slice(7).trim()
         : null;
+
+    if (bearerToken === "undefined" || bearerToken === "null" || bearerToken === "") {
+      bearerToken = null;
+    }
 
     const token = req.cookies?.token || bearerToken;
 
