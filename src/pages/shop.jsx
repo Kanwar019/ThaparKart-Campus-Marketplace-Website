@@ -1,32 +1,34 @@
 // src/pages/Shop.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-import divider from "../assets/divider.svg";
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
 import image1 from "../assets/image-1.png";
 import BackButton from "../assets/icons/BackButton.svg";
 import image8 from "../assets/image-8.png";
 import image10 from "../assets/image-10.png";
-
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/Shop.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
   <img src={MagnifyingGlassIcon} className={className} alt="search" />
 );
 
-export const Shop = () => {
+export const Shop = ({ loggedIn }) => {
   const [searchValue, setSearchValue] = useState("");
   const [newArrivals, setNewArrivals] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    navigate(listingSearchUrl(isLogged, { search: searchValue }));
+  };
+
+  const handleHome = () => {
+    navigate(isLogged ? "/landing-login" : "/");
   };
 
   const handleBrowseListings = () => {
@@ -34,11 +36,17 @@ export const Shop = () => {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
-  const goToAllListings = () => navigate("/listings");
-  const goToCreateListing = () => navigate("/create-listing");
+  const goToAllListings = () => navigate(isLogged ? "/listings-login" : "/listings");
+  const goToCreateListing = () => navigate(isLogged ? "/create-listing-login" : "/create-listing");
 
-  // Category click → listings page
-  const handleCategoryClick = () => navigate("/listings");
+  // Category click → listings page with selected category
+  const handleCategoryClick = (category) => {
+    navigate(listingSearchUrl(isLogged, { category }));
+  };
+
+  const goToProduct = (listingId) => {
+    navigate(isLogged ? "/product-login" : "/product", { state: { listingId } });
+  };
 
   // -------- FETCH NEWEST 3 LISTINGS FOR "NEW ARRIVALS" --------
   useEffect(() => {
@@ -99,7 +107,7 @@ export const Shop = () => {
               {/* Logo */}
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={handleHome}
                 className="flex items-baseline gap-0 cursor-pointer"
               >
                 <span className="text-[#c90202] font-subheading">Thapar</span>
@@ -110,7 +118,7 @@ export const Shop = () => {
               <div className="flex items-center gap-4 lg:gap-8">
                 <button
                   type="button"
-                  onClick={() => navigate("/")}
+                  onClick={handleHome}
                   className="font-body-text text-white hover:text-[#ffdddd] transition-colors"
                 >
                   Home
@@ -122,6 +130,7 @@ export const Shop = () => {
                     type="text"
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     placeholder="Search"
                     className="flex-1 bg-transparent outline-none text-white placeholder:text-white/70"
                   />
@@ -130,17 +139,27 @@ export const Shop = () => {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="font-body-text text-white hover:text-[#ffdddd]"
-                >
-                  Login
-                </button>
+                {isLogged ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/my-account/orders")}
+                    className="font-body-text text-white hover:text-[#ffdddd]"
+                  >
+                    Account
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="font-body-text text-white hover:text-[#ffdddd]"
+                  >
+                    Login
+                  </button>
+                )}
 
                 <button
                   type="button"
-                  onClick={() => navigate("/about")}
+                  onClick={() => navigate(isLogged ? "/about-login" : "/about")}
                   className="px-6 py-3.5 bg-white/10 border border-white rounded-[999px] shadow-button-shadow hover:bg-white/20 transition-all"
                 >
                   <span className="text-white">Contact Us</span>
@@ -169,7 +188,7 @@ export const Shop = () => {
                 </button>
 
                 <button
-                  onClick={() => navigate("/create-listing")}
+                  onClick={goToCreateListing}
                   className="px-8 py-4 rounded-[999px] bg-black/70 text-white hover:bg-black/85 hover:scale-[1.03] transition-transform"
                 >
                   Create a Listing
@@ -277,9 +296,7 @@ export const Shop = () => {
                     <div
                       className="rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-white overflow-hidden transition-transform duration-200 hover:scale-[1.02] cursor-pointer"
                       onClick={() =>
-                        navigate("/product", {
-                          state: { listingId: newArrivals[0].id || newArrivals[0]._id },
-                        })
+                        goToProduct(newArrivals[0].id || newArrivals[0]._id)
                       }
                     >
                       <div className="w-full h-[260px] sm:h-[320px] lg:h-[420px]">
@@ -299,9 +316,7 @@ export const Shop = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        navigate("/product", {
-                          state: { listingId: newArrivals[0].id || newArrivals[0]._id },
-                        })
+                        goToProduct(newArrivals[0].id || newArrivals[0]._id)
                       }
                       className="mt-3 px-1 text-left cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
                     >
@@ -326,9 +341,7 @@ export const Shop = () => {
                     <div
                       className="rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-white overflow-hidden transition-transform duration-200 hover:scale-[1.02] cursor-pointer"
                       onClick={() =>
-                        navigate("/product", {
-                          state: { listingId: item.id || item._id },
-                        })
+                        goToProduct(item.id || item._id)
                       }
                     >
                       <div className="w-full h-[150px] md:h-[180px]">
@@ -347,9 +360,7 @@ export const Shop = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        navigate("/product", {
-                          state: { listingId: item.id || item._id },
-                        })
+                        goToProduct(item.id || item._id)
                       }
                       className="mt-3 px-1 text-left cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
                     >
@@ -381,7 +392,7 @@ export const Shop = () => {
               {/* Electronics */}
               <div>
                 <p
-                  onClick={handleCategoryClick}
+                  onClick={() => handleCategoryClick("Electronics & Gadgets")}
                   className="text-2xl mb-1 cursor-pointer transition-all duration-200 hover:text-[#c90202] hover:scale-[1.03] inline-block"
                 >
                   📱 Electronics
@@ -394,7 +405,7 @@ export const Shop = () => {
               {/* Books */}
               <div>
                 <p
-                  onClick={handleCategoryClick}
+                  onClick={() => handleCategoryClick("Books & Notes")}
                   className="text-2xl mb-1 cursor-pointer transition-all duration-200 hover:text-[#c90202] hover:scale-[1.03] inline-block"
                 >
                   📚 Books &amp; Notes
@@ -409,7 +420,7 @@ export const Shop = () => {
               {/* Cycles */}
               <div>
                 <p
-                  onClick={handleCategoryClick}
+                  onClick={() => handleCategoryClick("Cycles")}
                   className="text-2xl mb-1 cursor-pointer transition-all duration-200 hover:text-[#c90202] hover:scale-[1.03] inline-block"
                 >
                   🚲 Cycles
@@ -422,7 +433,7 @@ export const Shop = () => {
               {/* Essentials */}
               <div>
                 <p
-                  onClick={handleCategoryClick}
+                  onClick={() => handleCategoryClick("Hostel Essentials")}
                   className="text-2xl mb-1 cursor-pointer transition-all duration-200 hover:text-[#c90202] hover:scale-[1.03] inline-block"
                 >
                   📆 Essentials
@@ -437,45 +448,11 @@ export const Shop = () => {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-white py-10 relative">
-        <img
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto absolute top-0 left-0 right-0 h-px object-cover"
-          alt="Divider"
-          src={divider}
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          <p className="h-9 flex items-center font-subheading">
-            <span className="text-[#c90202]">Thapar</span>
-            <span className="text-black">Kart</span>
-          </p>
-
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
+
+export const ShopLogin = (props) => <Shop loggedIn={true} {...props} />;
 
 export default Shop;

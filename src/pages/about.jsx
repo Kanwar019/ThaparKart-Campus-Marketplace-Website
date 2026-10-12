@@ -1,19 +1,16 @@
 // src/pages/About.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Images / icons
-import divider from "../assets/divider.svg";
 import line1 from "../assets/line-1.svg";
 import BackButton from "../assets/icons/BackButton.svg";
-
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
 import image9 from "../assets/image-9.png";
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/About.css";
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 // Local fallback magnifying icon
 const HealthiconsMagnifyingGlassOutline = ({ className = "", src }) =>
@@ -47,22 +44,56 @@ const HealthiconsMagnifyingGlassOutline = ({ className = "", src }) =>
     </svg>
   );
 
-export const About = () => {
+export const About = ({ loggedIn }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
+  const [searchValue, setSearchValue] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
   const [message, setMessage]     = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSearch = () => {
+    navigate(listingSearchUrl(isLogged, { search: searchValue }));
+  };
+
+  const handleHome = () => {
+    navigate(isLogged ? "/landing-login" : "/");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ firstName, lastName, email, message });
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setMessage("");
-    alert("Thanks — message submitted (check console).");
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, message }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to send feedback.");
+        return;
+      }
+
+      alert("Thank you! Your feedback has been submitted.");
+
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Server error. Check backend logs.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -82,7 +113,7 @@ export const About = () => {
           {/* Logo */}
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={handleHome}
             className="flex items-baseline gap-0 cursor-pointer"
             aria-label="Go to homepage"
           >
@@ -94,7 +125,7 @@ export const About = () => {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={handleHome}
               className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
             >
               Home
@@ -104,24 +135,38 @@ export const About = () => {
             <div className="hidden sm:flex w-[260px] md:w-[320px] lg:w-[360px] items-center justify-between px-4 py-2 rounded-[999px] border border-[#0000001a] bg-white">
               <input
                 type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
                 placeholder="Search"
               />
               <button
                 type="button"
+                onClick={handleSearch}
                 className="hover:scale-[1.02] active:scale-[0.98] transition-transform"
               >
                 <HealthiconsMagnifyingGlassOutline className="w-5 h-5" />
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Login
-            </button>
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={() => navigate("/my-account/orders")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Account
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Login
+              </button>
+            )}
 
             {/* 🔽 Updated Contact Us: scrolls to contact-section */}
             <button
@@ -245,54 +290,20 @@ export const About = () => {
 
             <button
               type="submit"
-              className="px-8 py-4 bg-black text-white rounded-[20px] shadow-button-shadow hover:bg-[#1a1a1a] transition-colors"
+              disabled={submitting}
+              className="px-8 py-4 bg-black text-white rounded-[20px] shadow-button-shadow hover:bg-[#1a1a1a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Submit
+              {submitting ? "Submitting..." : "Submit"}
             </button>
           </form>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white py-10 relative">
-        <img
-          src={divider}
-          alt="Divider"
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto h-px object-cover absolute top-0 left-0 right-0"
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          <p className="font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202]">Thapar</span>
-            <span className="text-black">Kart</span>
-          </p>
-
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
 
+export const AboutWithLogin = (props) => <About loggedIn={true} {...props} />;
 export default About;

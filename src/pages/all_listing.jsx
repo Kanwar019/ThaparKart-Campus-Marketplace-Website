@@ -1,25 +1,28 @@
 // src/pages/all_listing.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 
-import divider from "../assets/divider.svg";
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
 import BackButton from "../assets/icons/BackButton.svg";
-
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/All_Listing.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { filterListings } from "../utils/listingSearch.js";
 
-
-export const AllListing = () => {
+export const AllListing = ({ loggedIn }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [searchValue, setSearchValue] = useState(
+    searchParams.get("search") || ""
+  );
+  const [selectedCategories, setSelectedCategories] = useState(() => {
+    const cat = searchParams.get("category");
+    return cat ? [cat] : [];
+  });
   const [selectedConditions, setSelectedConditions] = useState([]);
   const [sortBy, setSortBy] = useState("price-asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,6 +34,15 @@ export const AllListing = () => {
   const [loading, setLoading] = useState(true);
 
   const ITEMS_PER_PAGE = 9;
+
+  useEffect(() => {
+    const querySearch = searchParams.get("search") || "";
+    const queryCat = searchParams.get("category");
+    setSearchValue(querySearch);
+    if (queryCat) {
+      setSelectedCategories((prev) => (prev.includes(queryCat) ? prev : [queryCat]));
+    }
+  }, [searchParams]);
 
   const allCategories = [
     "Books & Notes",
@@ -44,7 +56,14 @@ export const AllListing = () => {
   const allConditions = ["New", "Like New", "Good", "Fair", "Needs Repair"];
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams);
+    if (searchValue.trim()) {
+      params.set("search", searchValue.trim());
+    } else {
+      params.delete("search");
+    }
+    setSearchParams(params, { replace: true });
   };
 
   const toggleCategory = (cat) => {
@@ -71,7 +90,7 @@ export const AllListing = () => {
   };
 
   const handleViewDetails = (id) => {
-    navigate("/product", { state: { listingId: id } });
+    navigate(isLogged ? "/product-login" : "/product", { state: { listingId: id } });
   };
 
   // 🔹 Fetch listings from backend
@@ -90,7 +109,7 @@ export const AllListing = () => {
               ...l,
               id: l._id,
               image: l.imageUrls && l.imageUrls.length > 0 ? l.imageUrls[0] : "",
-              condition: "Good", // fallback since backend doesn't have it yet
+              condition: l.condition || "",
             }))
           : [];
 
@@ -108,44 +127,14 @@ export const AllListing = () => {
 
   // ---- Derived filtered + sorted listings ----
   const filteredAndSorted = useMemo(() => {
-    let result = [...listings];
-
-    if (searchValue.trim() !== "") {
-      const query = searchValue.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.title.toLowerCase().includes(query) ||
-          (item.category || "").toLowerCase().includes(query)
-      );
-    }
-
-    if (selectedCategories.length > 0) {
-      result = result.filter((item) => selectedCategories.includes(item.category));
-    }
-
-    if (selectedConditions.length > 0) {
-      result = result.filter((item) =>
-        selectedConditions.includes(item.condition || "Good")
-      );
-    }
-
-    const min = parseInt(minPrice, 10);
-    const max = parseInt(maxPrice, 10);
-
-    if (!isNaN(min)) {
-      result = result.filter((item) => (item.price || 0) >= min);
-    }
-    if (!isNaN(max)) {
-      result = result.filter((item) => (item.price || 0) <= max);
-    }
-
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.price || 0) - (b.price || 0));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.price || 0) - (a.price || 0));
-    }
-
-    return result;
+    return filterListings(listings, {
+      searchValue,
+      selectedCategories,
+      selectedConditions,
+      minPrice,
+      maxPrice,
+      sortBy,
+    });
   }, [
     listings,
     searchValue,
@@ -195,7 +184,7 @@ export const AllListing = () => {
           {/* Logo */}
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(isLogged ? "/landing-login" : "/")}
             className="flex items-baseline gap-0 cursor-pointer"
             aria-label="Go to homepage"
           >
@@ -207,7 +196,7 @@ export const AllListing = () => {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
               className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
             >
               Home
@@ -219,6 +208,7 @@ export const AllListing = () => {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search"
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
               />
@@ -231,17 +221,27 @@ export const AllListing = () => {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Login
-            </button>
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={() => navigate("/my-account/orders")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Account
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Login
+              </button>
+            )}
 
             <button
               type="button"
-              onClick={() => navigate("/about")}
+              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
               className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow text-white hover:bg-[#1a1a1a] transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Contact Us
@@ -513,45 +513,11 @@ export const AllListing = () => {
       </main>
 
       {/* ---------- FOOTER ---------- */}
-      <footer className="bg-white py-10 relative">
-        <img
-          src={divider}
-          alt="Divider"
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto h-px object-cover absolute top-0 left-0 right-0"
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          <p className="font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202]">Thapar</span>
-            <span className="text-black">Kart</span>
-          </p>
-
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02]"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
+
+export const AllListingLogin = (props) => <AllListing loggedIn={true} {...props} />;
 
 export default AllListing;

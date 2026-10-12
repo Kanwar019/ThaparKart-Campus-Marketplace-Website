@@ -1,4 +1,3 @@
-// src/pages/chat.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
@@ -6,205 +5,199 @@ import { io } from "socket.io-client";
 import BackButton from "../assets/icons/BackButton.svg";
 import avatarImg from "../assets/icons/avatar.svg";
 
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/Chat.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export const Chat = () => {
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
+  const incomingChatId = location.state?.conversationId;
 
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [messageInput, setMessageInput] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
-  
-  // Real user data
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [chatError, setChatError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
 
-  const socketRef = useRef(null);
+  const selectedIdRef = useRef(null);
+  const refreshRef = useRef(null);
+  const sendingRef = useRef(false);
   const messagesEndRef = useRef(null);
 
-  // 1. Fetch Profile on Mount
   useEffect(() => {
+    let active = true;
+
     const fetchProfile = async () => {
       try {
-        // ✅ FIXED: Changed /api/user/profile to /api/profile
-        const res = await fetch(`${API_BASE_URL}/api/profile`, { 
-            credentials: "include" 
-        }); 
-        if (res.ok) {
-          const data = await res.json();
-          setCurrentUser(data.user || data); 
-        } else {
-            console.log("Not logged in");
-        }
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  // 2. Load Conversations (Only after we have currentUser)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const fetchConversations = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
+        const res = await fetch(`${API_BASE_URL}/api/profile`, {
           credentials: "include",
         });
-        if (res.ok) {
-          const json = await res.json();
-          const loadedConvs = json.conversations || [];
-          setConversations(loadedConvs);
-
-          // If we navigated here with a specific conversationId (from Product Page), select that.
-          // Otherwise, select the first one in the list.
-          const incomingChatId = location.state?.conversationId;
-
-          if (incomingChatId) {
-            setSelectedId(incomingChatId);
-          } else if (loadedConvs.length > 0) {
-            setSelectedId(loadedConvs[0].id);
-          }
+        if (res.status === 401) {
+          navigate("/login", { replace: true });
+          return;
         }
-      } catch (err) {
-        console.error("Failed to load conversations:", err);
+        if (!res.ok) throw new Error("Could not load your profile.");
+
+        const profile = await res.json();
+        if (active) {
+          setCurrentUser({ ...profile, _id: profile._id ?? profile.id });
+        }
+      } catch {
+        if (active) setChatError("Could not load your profile. Please try again.");
       }
     };
 
-    fetchConversations();
-  }, [currentUser, location.state]);
+    fetchProfile();
+    return () => { active = false; };
+  }, [navigate]);
 
-  // 3. Connect Socket
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) return undefined;
+
+    let active = true;
+    let refreshQueued = false;
+    let refreshRunning = false;
+
+    const refreshChat = async () => {
+      refreshQueued = true;
+      if (refreshRunning) return;
+      refreshRunning = true;
+
+      try {
+        while (active && refreshQueued) {
+          refreshQueued = false;
+
+          const conversationsRes = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
+            credentials: "include",
+          });
+          if (conversationsRes.status === 401) {
+            navigate("/login", { replace: true });
+            return;
+          }
+          if (!conversationsRes.ok) throw new Error("Could not load your chats.");
+
+          const result = await conversationsRes.json();
+          const loaded = Array.isArray(result.conversations) ? result.conversations : [];
+          const activeId = selectedIdRef.current;
+          const targetId = activeId || incomingChatId || loaded[0]?.id || null;
+
+          if (!activeId && targetId) {
+            selectedIdRef.current = targetId;
+            setSelectedId(targetId);
+          }
+
+          if (!loaded.some((conversation) => conversation.id === targetId)) {
+            if (!refreshQueued && active) {
+              setConversations(loaded);
+              setLoading(false);
+              setChatError("");
+            }
+            continue;
+          }
+
+          const messagesRes = await fetch(`${API_BASE_URL}/api/chat/${targetId}/messages`, {
+            credentials: "include",
+          });
+          if (messagesRes.status === 401) {
+            navigate("/login", { replace: true });
+            return;
+          }
+          if (!messagesRes.ok) throw new Error("Could not load this conversation.");
+
+          const messagesResult = await messagesRes.json();
+          if (!active || refreshQueued || selectedIdRef.current !== targetId) continue;
+
+          setConversations(loaded.map((conversation) => conversation.id === targetId
+            ? { ...conversation, messages: messagesResult.messages || [], unread: 0 }
+            : conversation));
+          setLoading(false);
+          setChatError("");
+        }
+      } catch (error) {
+        if (active) {
+          setLoading(false);
+          setChatError(error.message || "Could not load your chats. Please try again.");
+        }
+      } finally {
+        refreshRunning = false;
+        if (active && refreshQueued) void refreshChat();
+      }
+    };
+
+    refreshRef.current = refreshChat;
 
     const socket = io(API_BASE_URL, {
       withCredentials: true,
-      autoConnect: true,
+      autoConnect: false,
     });
-    socketRef.current = socket;
 
     socket.on("connect", () => {
       setSocketConnected(true);
-      // Join room with my User ID
-      socket.emit("join", currentUser._id);
+      // The server assigns this connection's room from its verified session.
+      // Refreshing here recovers messages missed during a disconnect.
+      void refreshChat();
     });
-
     socket.on("disconnect", () => setSocketConnected(false));
+    socket.on("message", () => { void refreshChat(); });
+    socket.connect();
 
-    // Listen for incoming messages
-    socket.on("message", (payload) => {
-        const { conversationId, message } = payload;
-
-        setConversations((prev) => {
-            const index = prev.findIndex(c => c.id === conversationId);
-            
-            // If conversation exists
-            if (index !== -1) {
-                const updatedConvs = [...prev];
-                const conv = { ...updatedConvs[index] };
-                
-                // Add message
-                conv.messages = conv.messages ? [...conv.messages, message] : [message];
-                conv.preview = message.text;
-                conv.time = "Just now";
-                
-                // If not currently selected, mark unread
-                if (conversationId !== selectedId) {
-                    conv.unread = (conv.unread || 0) + 1;
-                }
-
-                updatedConvs.splice(index, 1);
-                updatedConvs.unshift(conv); // Move to top
-                return updatedConvs;
-            } 
-            // If new conversation (e.g. someone started chat with me)
-            else {
-                // Ideally fetch full conv, but here we ignore or trigger reload
-                return prev; 
-            }
-        });
-    });
+    void refreshChat();
 
     return () => {
+      active = false;
+      refreshRef.current = null;
       socket.disconnect();
     };
-  }, [currentUser, selectedId]);
+  }, [currentUser, incomingChatId, navigate]);
 
-  // 4. Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversations, selectedId]);
 
-  const selectedConversation = conversations.find(c => c.id === selectedId);
+  const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
-  // 5. Select Chat & Load Messages
-  const handleSelectConversation = async (id) => {
+  const handleSelectConversation = (id) => {
+    if (sendingRef.current || selectedIdRef.current === id) return;
+    selectedIdRef.current = id;
     setSelectedId(id);
-    
-    // Optimistic update: mark read locally
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, unread: 0 } : c));
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/chat/${id}/messages`, {
-          credentials: "include"
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setConversations(prev => prev.map(c => 
-            c.id === id ? { ...c, messages: json.messages } : c
-        ));
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    setMessageInput("");
+    setSendError("");
+    setLoading(true);
+    setChatError("");
+    void refreshRef.current?.();
   };
 
-  // 6. Send Message
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!messageInput.trim() || !selectedConversation || !currentUser) return;
-
+  const handleSend = async (event) => {
+    event?.preventDefault();
     const text = messageInput.trim();
-    setMessageInput(""); // Clear input immediately
+    const chatId = selectedIdRef.current;
+    if (!text || !chatId || !currentUser || sendingRef.current) return;
 
-    // Optimistic UI Update
-    const tempMsg = {
-        text,
-        from: "me",
-        time: "...", 
-    };
-
-    setConversations(prev => prev.map(c => {
-        if (c.id === selectedConversation.id) {
-            const msgs = c.messages ? [...c.messages, tempMsg] : [tempMsg];
-            return { ...c, messages: msgs, preview: text, time: "Now" };
-        }
-        return c;
-    }));
+    sendingRef.current = true;
+    setSending(true);
+    setSendError("");
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/chat/send`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-                chatId: selectedConversation.id,
-                text: text,
-                // find the other participant ID
-                recipientId: selectedConversation.participants.find(p => p._id !== currentUser._id)?._id
-            })
-        });
+      const res = await fetch(`${API_BASE_URL}/api/chat/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        // The server derives the recipient from the conversation participants.
+        body: JSON.stringify({ chatId, text }),
+      });
+      if (!res.ok) throw new Error("Message could not be sent.");
 
-        if (!res.ok) {
-            console.error("Failed to send");
-        }
-    } catch (err) {
-        console.error("Error sending message:", err);
+      setMessageInput((draft) => draft.trim() === text ? "" : draft);
+      void refreshRef.current?.();
+    } catch {
+      setSendError("Could not confirm delivery. Your draft is still here; check the chat before retrying.");
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
   };
 
@@ -222,13 +215,12 @@ export const Chat = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0">
-        {/* Sidebar */}
-        <aside className="w-[30%] min-w-[260px] border-r border-[#0000001a] bg-[#f7f7f7] flex flex-col">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <aside className="w-[30%] min-w-[120px] sm:min-w-[260px] border-r border-[#0000001a] bg-[#f7f7f7] flex flex-col">
           <div className="px-4 py-3 border-b border-[#0000001a]">
             <h2 className="font-semibold text-sm">Chats</h2>
             <p className="text-[11px] text-[#777] mt-1">
-                {socketConnected ? "Online" : "Connecting..."}
+              {socketConnected ? "Online" : "Connecting..."}
             </p>
           </div>
 
@@ -238,6 +230,8 @@ export const Chat = () => {
               return (
                 <button
                   key={conv.id}
+                  type="button"
+                  disabled={sending}
                   onClick={() => handleSelectConversation(conv.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[#0000000d] ${
                     isActive ? "bg-white" : "bg-[#f7f7f7] hover:bg-[#ececec]"
@@ -266,26 +260,32 @@ export const Chat = () => {
           </div>
         </aside>
 
-        {/* Chat Area */}
-        <section className="flex-1 flex flex-col bg-[#fafafa]">
-          {!selectedConversation ? (
+        <section className="flex-1 min-w-0 flex flex-col bg-[#fafafa]">
+          {chatError ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-sm text-[#777]" role="alert">
+              <p>{chatError}</p>
+              <button type="button" onClick={() => void refreshRef.current?.()} className="underline">
+                Retry
+              </button>
+            </div>
+          ) : !selectedConversation ? (
             <div className="flex-1 flex items-center justify-center text-sm text-[#777]">
-              Select a chat to start messaging.
+              {loading ? "Loading chats..." : "Select a chat to start messaging."}
             </div>
           ) : (
             <>
               <div className="px-6 py-3 border-b border-[#0000001a] bg-white flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-[#e0e0e0] flex items-center justify-center">
-                   <img src={avatarImg} alt="Avatar" className="w-7 h-7 object-cover" />
+                  <img src={avatarImg} alt="Avatar" className="w-7 h-7 object-cover" />
                 </div>
                 <div className="font-medium text-sm">{selectedConversation.name}</div>
               </div>
 
-              <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
+              <div className="flex-1 min-w-0 px-6 py-4 overflow-y-auto space-y-4">
                 {(selectedConversation.messages || []).map((msg, idx) => {
                   const isMe = msg.from === "me";
                   return (
-                    <div key={idx} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                    <div key={msg._id || `${msg.timestamp || msg.time}-${idx}`} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                         <div
                           className={`px-4 py-2 rounded-2xl text-sm leading-relaxed ${
@@ -304,21 +304,26 @@ export const Chat = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={handleSend} className="px-4 py-3 border-t border-[#0000001a] bg-white flex gap-3">
+              <form onSubmit={handleSend} className="min-w-0 px-4 py-3 border-t border-[#0000001a] bg-white flex gap-3">
                 <input
                   type="text"
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
+                  onChange={(event) => setMessageInput(event.target.value)}
                   placeholder="Type a message…"
+                  disabled={sending}
+                  style={{ minWidth: 0 }}
+                  aria-label="Message"
                   className="flex-1 px-4 py-2 rounded-full border border-[#0000001a] text-sm outline-none bg-[#fdfdfd]"
                 />
                 <button
                   type="submit"
+                  disabled={sending}
                   className="px-4 py-2 bg-black text-white text-sm rounded-full shadow-button-shadow hover:bg-[#1a1a1a]"
                 >
                   Send
                 </button>
               </form>
+              {sendError && <p role="alert" className="px-4 pb-3 text-sm text-[#c90202]">{sendError}</p>}
             </>
           )}
         </section>

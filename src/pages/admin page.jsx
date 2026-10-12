@@ -1,13 +1,14 @@
 // src/pages/admin page.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/Admin_Page.css";
 
-export const AdminPage = () => {
+export const AdminPage = ({ authorized = true }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(authorized);
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
@@ -21,9 +22,6 @@ export const AdminPage = () => {
   // 🔹 NEW: recent listings for "Recent activity"
   const [recentListings, setRecentListings] = useState([]);
 
-  // API base URL
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   // Load dark mode & admin flag
   useEffect(() => {
     try {
@@ -31,11 +29,11 @@ export const AdminPage = () => {
       if (storedDark === "true") setDarkMode(true);
 
       const storedAdmin = localStorage.getItem("isAdmin");
-      setIsAdmin(storedAdmin === "true");
+      setIsAdmin(authorized || storedAdmin === "true");
     } catch {
-      setIsAdmin(false);
+      setIsAdmin(authorized);
     }
-  }, []);
+  }, [authorized]);
 
   // Fetch feedback only if admin
   useEffect(() => {
@@ -66,7 +64,7 @@ export const AdminPage = () => {
     };
 
     fetchFeedbacks();
-  }, [isAdmin, API_BASE_URL]);
+  }, [isAdmin]);
 
   // Fetch stats only if admin
   useEffect(() => {
@@ -102,7 +100,7 @@ export const AdminPage = () => {
     };
 
     fetchStats();
-  }, [isAdmin, API_BASE_URL]);
+  }, [isAdmin]);
 
   // 🔹 NEW: fetch recent listings for "Recent activity"
   useEffect(() => {
@@ -110,7 +108,7 @@ export const AdminPage = () => {
 
     const fetchRecentListings = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/listings`, {
+        const res = await fetch(`${API_BASE_URL}/api/listings?limit=2`, {
           credentials: "include",
         });
 
@@ -128,7 +126,7 @@ export const AdminPage = () => {
     };
 
     fetchRecentListings();
-  }, [isAdmin, API_BASE_URL]);
+  }, [isAdmin]);
 
   const handleBack = () => navigate(-1);
   const handleHome = () => navigate("/landing-login");

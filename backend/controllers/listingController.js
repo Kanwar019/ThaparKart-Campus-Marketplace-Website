@@ -1,45 +1,14 @@
 // backend/controllers/listingController.js
 import Listing from "../models/Listing.js";
+import { validateListingInput } from "../utils/listingValidation.js";
 
 // POST /api/listings  (create new listing)
 export const createListing = async (req, res) => {
   try {
-    const { title, description, price, category, imageUrls, condition } = req.body;
-
-    if (!title || !title.trim()) {
-      return res.status(400).json({ message: "Title is required." });
-    }
-
-    if (title.trim().length > 150) {
-      return res.status(400).json({ message: "Title must be under 150 characters." });
-    }
-
-    if (price === undefined || price === null || price === "") {
-      return res.status(400).json({ message: "Price is required." });
-    }
-
-    const parsedPrice = Number(price);
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
-      return res.status(400).json({ message: "Price must be a valid non-negative number." });
-    }
-
-    if (parsedPrice > 10000000) {
-      return res.status(400).json({ message: "Price exceeds allowable threshold." });
-    }
-
+    const fields = validateListingInput(req.body);
     const listing = await Listing.create({
-      user: req.user._id,
-      title: title.trim(),
-      description: description?.trim() ? description.trim().slice(0, 3000) : "",
-      price: parsedPrice,
-      category: category ? category.trim() : "",
-      condition: condition ? condition.trim() : "",
-      imageUrls: Array.isArray(imageUrls)
-        ? imageUrls
-        : imageUrls
-        ? [imageUrls]
-        : [],
-      status: "active",
+      description: "", category: "", condition: "", imageUrls: [],
+      ...fields, user: req.user._id, status: "active",
     });
 
     return res.status(201).json({
@@ -47,6 +16,7 @@ export const createListing = async (req, res) => {
       listing,
     });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ message: err.message });
     console.error("createListing error:", err);
     return res.status(500).json({ message: "Failed to create listing." });
   }
@@ -94,10 +64,16 @@ export const getAllListings = async (req, res) => {
     }
 
     // Backward-compatible fallback for unpaginated frontend calls
-    const listings = await Listing.find(filter)
+    let query = Listing.find(filter)
       .sort({ createdAt: -1 })
       .populate("user", "name email");
 
+    if (req.query.limit) {
+      const limitNum = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 9));
+      query = query.limit(limitNum);
+    }
+
+    const listings = await query;
     return res.json(listings);
   } catch (err) {
     console.error("getAllListings error:", err);
@@ -142,42 +118,36 @@ export const getMyListings = async (req, res) => {
 export const updateListing = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      title,
-      description,
-      price,
-      category,
-      status,
-      imageUrls,
-      condition,
-    } = req.body;
+    const status = req.body?.status;
 
     const listing = await Listing.findOne({ _id: id, user: req.user._id });
     if (!listing) {
       return res.status(404).json({ message: "Listing not found" });
     }
-
-    if (title !== undefined) listing.title = title.trim();
-    if (description !== undefined) listing.description = description.trim();
-    if (price !== undefined) listing.price = Number(price);
-    if (category !== undefined) listing.category = category;
-    if (condition !== undefined) listing.condition = condition;
-    if (status !== undefined) listing.status = status;
-    if (imageUrls !== undefined) {
-      listing.imageUrls = Array.isArray(imageUrls)
-        ? imageUrls
-        : imageUrls
-        ? [imageUrls]
-        : [];
+    if (listing.status !== "active") {
+      return res.status(409).json({ message: "Only available listings can be edited. Cancel an active reservation first." });
+    }
+    if (status !== undefined && status !== "active") {
+      return res.status(400).json({ message: "Listing status is managed through reservations." });
     }
 
-    await listing.save();
+    const changes = validateListingInput(req.body, { partial: true });
+
+    const updated = await Listing.findOneAndUpdate(
+      { _id: id, user: req.user._id, status: "active" },
+      { $set: changes },
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      return res.status(409).json({ message: "This listing changed or was reserved. Please refresh." });
+    }
 
     return res.json({
       message: "Listing updated",
-      listing,
+      listing: updated,
     });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ message: err.message });
     console.error("updateListing error:", err);
     return res.status(500).json({ message: "Failed to update listing." });
   }
@@ -192,13 +162,14 @@ export const deleteListing = async (req, res) => {
       {
         _id: id,
         user: req.user._id,
+        status: { $in: ["active", "sold"] },
       },
       { status: "deleted" },
       { new: true }
     );
 
     if (!deleted) {
-      return res.status(404).json({ message: "Listing not found" });
+      return res.status(404).json({ message: "Listing not found or unavailable. Cancel an active reservation before deleting." });
     }
 
     return res.json({ message: "Listing deleted" });

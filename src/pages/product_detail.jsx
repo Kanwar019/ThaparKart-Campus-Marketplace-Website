@@ -4,14 +4,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
 import BackButton from "../assets/icons/BackButton.svg";
-import divider from "../assets/divider.svg";
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/Product_Detail_Page.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 const initialProduct = {
   title: "Casio Scientific Calculator FX-991ES",
@@ -21,13 +18,15 @@ const initialProduct = {
   category: "",
   condition: "",
   imageUrls: ["/image.png", "/image-2.png", "/image-3.png", "/image-4.png"],
+  sellerId: null,
 };
 
-export const ProductDetail = () => {
+export const ProductDetail = ({ loggedIn }) => {
   const [searchValue, setSearchValue] = useState("");
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
   const productFromState = location.state?.product || null;
   const listingId = location.state?.listingId || null;
@@ -45,6 +44,8 @@ export const ProductDetail = () => {
       ? productFromState.imageUrls
       : initialProduct.imageUrls
   );
+  const [isReserved, setIsReserved] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
 
   const [loadingListing, setLoadingListing] = useState(false);
   const [relatedListings, setRelatedListings] = useState([]);
@@ -95,11 +96,13 @@ export const ProductDetail = () => {
           imageUrls,
           category: data.category || "",
           condition: data.condition || "",
+          sellerId: data.user?._id || data.user || data.sellerId,
         };
 
         setSelectedProduct(mapped);
         setSelectedImage(mapped.mainImage);
         setThumbSources(mapped.imageUrls);
+        setIsReserved(false);
       } catch (err) {
         console.error("Error fetching listing by id:", err);
       } finally {
@@ -114,7 +117,7 @@ export const ProductDetail = () => {
     const fetchRelated = async () => {
       try {
         setLoadingRelated(true);
-        const res = await fetch(`${API_BASE_URL}/api/listings`);
+        const res = await fetch(`${API_BASE_URL}/api/listings?limit=7`);
         if (!res.ok) {
           throw new Error("Failed to load related listings");
         }
@@ -145,23 +148,99 @@ export const ProductDetail = () => {
   }, [selectedProduct]);
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
-  };
-
-  const handleSelectProduct = (product) => {
-    setSelectedProduct(product);
-    setSelectedImage(product.mainImage || "/image.png");
-
-    const el = document.getElementById("product-top");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    navigate(listingSearchUrl(isLogged, { search: searchValue }));
   };
 
   const handleClickListingCard = (listing) => {
-    navigate("/product", {
+    navigate(isLogged ? "/product-login" : "/product", {
       state: { listingId: listing._id },
     });
+  };
+
+  const effectiveListingId =
+    listingId || (productFromState && productFromState._id) || null;
+  const canReserve = Boolean(effectiveListingId);
+
+  const handleReserve = async () => {
+    if (!isLogged) {
+      navigate("/login");
+      return;
+    }
+    if (!canReserve || isReserved || isReserving) return;
+
+    try {
+      setIsReserving(true);
+
+      const res = await fetch(`${API_BASE_URL}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ listingId: effectiveListingId }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        alert("Your session has expired. Please log in again.");
+        navigate("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        alert(data.message || "Failed to reserve item. Please try again.");
+        if (data.message && data.message.includes("already reserved")) {
+          setIsReserved(true);
+        }
+        return;
+      }
+
+      setIsReserved(true);
+      alert("Item reserved successfully! You can see it in My Reserved Items.");
+    } catch (err) {
+      console.error("Error creating reservation:", err);
+      alert("Could not connect to server. Please try again.");
+    } finally {
+      setIsReserving(false);
+    }
+  };
+
+  const handleChatWithSeller = async () => {
+    if (!isLogged) {
+      navigate("/login");
+      return;
+    }
+    const sellerId = selectedProduct.sellerId;
+
+    if (!sellerId) {
+      alert("Seller information is missing for this item.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/chat/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ recipientId: sellerId }),
+      });
+
+      if (res.status === 401) {
+        alert("Please log in to chat.");
+        navigate("/login");
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        navigate("/chat", { state: { conversationId: data.conversationId } });
+      } else {
+        const err = await res.json();
+        alert(err.message || "Could not start chat.");
+      }
+    } catch (err) {
+      console.error("Error starting chat:", err);
+      alert("Something went wrong. Please try again.");
+    }
   };
 
   const makeThumb = (src) => {
@@ -200,7 +279,7 @@ export const ProductDetail = () => {
         <div className="w-[90%] mx-auto flex items-center justify-between">
           <button
             type="button"
-            onClick={() => navigate("/landing")}
+            onClick={() => navigate(isLogged ? "/landing-login" : "/")}
             className="flex items-baseline gap-0 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
           >
             <span className="text-[#c90202] font-subheading">Thapar</span>
@@ -210,7 +289,7 @@ export const ProductDetail = () => {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               type="button"
-              onClick={() => navigate("/landing")}
+              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
               className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
             >
               Home
@@ -221,6 +300,7 @@ export const ProductDetail = () => {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search"
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
               />
@@ -233,17 +313,27 @@ export const ProductDetail = () => {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            >
-              Login
-            </button>
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={() => navigate("/my-account/orders")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
+              >
+                Account
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
+              >
+                Login
+              </button>
+            )}
 
             <button
               type="button"
-              onClick={() => navigate("/about")}
+              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
               className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
             >
               <span className="font-small-text text-white">Contact Us</span>
@@ -295,13 +385,27 @@ export const ProductDetail = () => {
               </div>
             </div>
 
+            {/* Reserve Item */}
             <button
               type="button"
-              onClick={() => navigate("/login")}
-              className="all-[unset] box-border flex h-[52px] items-center justify-center gap-2 px-6 py-3.5 relative self-stretch w-full bg-black rounded-[20px] shadow-button-shadow transition-all duration-[0.2s] ease-[ease] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              disabled={isLogged && (!canReserve || isReserved || isReserving)}
+              onClick={handleReserve}
+              className={`all-[unset] box-border flex h-[52px] items-center justify-center gap-2 px-6 py-3.5 relative self-stretch w-full rounded-[20px] shadow-button-shadow transition-all duration-200 ease-in-out ${
+                isLogged && (!canReserve || isReserved || isReserving)
+                  ? "bg-[#555] opacity-60 cursor-default"
+                  : "bg-black cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              }`}
             >
               <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
-                Reserve Item
+                {!isLogged
+                  ? "Reserve Item"
+                  : !canReserve
+                  ? "Reservation not available"
+                  : isReserving
+                  ? "Reserving..."
+                  : isReserved
+                  ? "Reserved"
+                  : "Reserve Item"}
               </div>
             </button>
 
@@ -310,9 +414,10 @@ export const ProductDetail = () => {
               location. Payment happens in person — no fees or commissions.
             </p>
 
+            {/* Chat With Seller */}
             <button
               type="button"
-              onClick={() => navigate("/login")}
+              onClick={handleChatWithSeller}
               className="all-[unset] box-border flex h-[52px] items-center justify-center gap-2 px-6 py-3.5 relative self-stretch w-full bg-black rounded-[20px] shadow-button-shadow transition-all duration-[0.2s] ease-[ease] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
@@ -468,7 +573,7 @@ export const ProductDetail = () => {
 
           <button
             type="button"
-            onClick={() => navigate("/listings")}
+            onClick={() => navigate(isLogged ? "/listings-login" : "/listings")}
             className="all-[unset] box-border gap-2.5 px-6 py-[18px] absolute top-[778px] right-0 inline-flex items-center justify-center bg-black rounded-[20px] shadow-button-shadow cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
           >
             <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
@@ -478,45 +583,11 @@ export const ProductDetail = () => {
         </div>
       </main>
 
-      <footer className="bg-white py-10 relative">
-        <img
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto top-0 left-0 right-0 h-px object-cover absolute inset-x-0"
-          alt="Divider"
-          src={divider}
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          <p className="h-9 flex items-center justify-center font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202] font-subheading">Thapar</span>
-            <span className="text-black font-subheading">Kart</span>
-          </p>
-
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
+
+export const ProductDetailWithLogin = (props) => <ProductDetail loggedIn={true} {...props} />;
 
 export default ProductDetail;

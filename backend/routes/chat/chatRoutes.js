@@ -2,6 +2,7 @@ import express from "express";
 import Chat from "../../models/Chat.js";
 // ✅ Import 'authRequired' and alias it as 'verifyToken'
 import { authRequired as verifyToken } from "../../middleware/authMiddleware.js"; 
+import { chatLimiter } from "../../middleware/rateLimitMiddleware.js";
 
 const router = express.Router();
 
@@ -59,6 +60,9 @@ router.get("/:id/messages", verifyToken, async (req, res) => {
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: "Chat not found" });
+    if (!chat.participants.some((participant) => String(participant) === String(currentUserId))) {
+      return res.status(403).json({ message: "You are not a participant in this conversation." });
+    }
 
     // ✅ LOGIC: Mark unread messages from the other user as read
     let updatesMade = false;
@@ -95,7 +99,7 @@ router.get("/:id/messages", verifyToken, async (req, res) => {
 });
 
 // 3. Send a message (Saved to DB + Emitted via Socket)
-router.post("/send", verifyToken, async (req, res) => {
+router.post("/send", verifyToken, chatLimiter, async (req, res) => {
   try {
     const { recipientId, text, chatId } = req.body;
     const senderId = req.user.id;
@@ -121,6 +125,9 @@ router.post("/send", verifyToken, async (req, res) => {
     }
 
     if (!chat) return res.status(400).json({ message: "Invalid Request" });
+    if (!chat.participants.some((participant) => String(participant) === String(senderId))) {
+      return res.status(403).json({ message: "You are not a participant in this conversation." });
+    }
 
     // Add message
     const newMessage = {
@@ -147,7 +154,7 @@ router.post("/send", verifyToken, async (req, res) => {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
         sender: senderId
       },
-      recipientId: recipientId || chat.participants.find(p => String(p) !== String(senderId))
+      recipientId: chat.participants.find(p => String(p) !== String(senderId))
     };
 
     // Emit to the recipient's room

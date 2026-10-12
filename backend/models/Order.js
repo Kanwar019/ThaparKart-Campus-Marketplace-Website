@@ -1,8 +1,12 @@
 // backend/models/Order.js
 import mongoose from "mongoose";
+import { isValidPrice } from "../utils/listingValidation.js";
 
 const orderSchema = new mongoose.Schema(
   {
+    // Optional for legacy orders: their original price cannot be reconstructed.
+    priceAtReservation: { type: Number, immutable: true,
+      validate: { validator: isValidPrice, message: "Invalid reservation price" } },
     listing: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Listing",

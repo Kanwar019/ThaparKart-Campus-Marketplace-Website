@@ -9,8 +9,8 @@ import instagramIcon from "../assets/icons/instagram.svg";
 import linkedinIcon from "../assets/icons/linkedin.svg";
 import youtubeIcon from "../assets/icons/youtube.svg";
 
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/My_Listing.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const getStatusStyles = (statusRaw) => {
   const status = (statusRaw || "").toLowerCase();

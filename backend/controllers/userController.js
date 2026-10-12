@@ -20,6 +20,8 @@ export const getProfile = (req, res) => {
     ADMIN_EMAILS.includes(req.user.email?.toLowerCase());
 
   return res.json({
+    id: req.user._id.toString(),
+    _id: req.user._id.toString(),
     name: req.user.name || "",
     email: req.user.email || "",
     role: req.user.role || (isAdmin ? "admin" : "user"),
@@ -97,13 +99,14 @@ export const deleteMyListing = async (req, res) => {
       {
         _id: id,
         user: req.user._id,
+        status: { $in: ["active", "sold"] },
       },
       { status: "deleted" },
       { new: true }
     );
 
     if (!deleted) {
-      return res.status(404).json({ message: "Listing not found" });
+      return res.status(404).json({ message: "Listing not found or unavailable. Cancel an active reservation before deleting." });
     }
 
     return res.json({ message: "Listing deleted" });

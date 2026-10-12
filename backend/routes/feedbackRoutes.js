@@ -1,10 +1,12 @@
 import express from "express";
 import Feedback from "../models/Feedback.js";
+import { authRequired, adminRequired } from "../middleware/authMiddleware.js";
+import { feedbackLimiter } from "../middleware/rateLimitMiddleware.js";
 
 const router = express.Router();
 
 // POST → Save Feedback
-router.post("/", async (req, res) => {
+router.post("/", feedbackLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, message } = req.body;
 
@@ -25,7 +27,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET → All Feedback (for Admin)
-router.get("/", async (req, res) => {
+router.get("/", authRequired, adminRequired, async (req, res) => {
   try {
     const list = await Feedback.find().sort({ createdAt: -1 });
     return res.json(list);

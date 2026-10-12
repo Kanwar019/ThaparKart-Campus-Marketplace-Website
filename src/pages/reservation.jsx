@@ -1,17 +1,14 @@
 // src/pages/reservation.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import divider from "../assets/divider.svg";
 import magnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
 import BackButton from "../assets/icons/BackButton.svg";
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/Reservation.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 export const Reservation = () => {
   const navigate = useNavigate();
@@ -23,75 +20,72 @@ export const Reservation = () => {
   const RESERVATIONS_PER_PAGE = 3;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // -------- FETCH ORDERS FROM BACKEND --------
-  useEffect(() => {
-  const fetchOrders = async () => {
+  const [view, setView] = useState("buying");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const requestId = useRef(0);
+
+  const fetchOrders = useCallback(async ({ signal, clearError = true } = {}) => {
+    const request = ++requestId.current;
+    setLoading(true);
+    if (clearError) setError("");
     try {
-      setLoading(true);
-
-      const res = await fetch(`${API_BASE_URL}/api/orders`, {
-        credentials: "include",
+      const response = await fetch(`${API_BASE_URL}/api/orders${view === "selling" ? "/selling" : ""}`, {
+        credentials: "include", signal,
       });
-
-      if (res.status === 401) {
-        navigate("/login");
-        return;
+      if (response.status === 401) { navigate("/login"); return; }
+      if (!response.ok) throw new Error("Could not load reservations. Please refresh.");
+      const orders = await response.json();
+      if (!Array.isArray(orders)) throw new Error("Could not load reservations. Please refresh.");
+      if (request === requestId.current && !signal?.aborted) {
+        setReservations(orders);
+        setCurrentPage((page) => Math.min(page, Math.max(1, Math.ceil(orders.length / RESERVATIONS_PER_PAGE))));
       }
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch reservations");
+    } catch (failure) {
+      if (request === requestId.current && !signal?.aborted) {
+        setError(failure.message);
+        setReservations([]);
       }
-
-      const raw = await res.json();
-      console.log("Orders API response:", raw);
-
-      const arr = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw.orders)
-        ? raw.orders
-        : [];
-
-      const mapped = arr.map((order) => {
-        const listing = order.listing || {};
-
-        const sellerName =
-          listing.sellerName ||
-          (listing.user &&
-            (listing.user.name || listing.user.email)) ||
-          "Seller";
-
-        let statusLabel = "Reserved";
-        if (order.status === "Reserved") {
-          statusLabel = "Awaiting Seller Confirmation";
-        } else if (
-          order.status === "Pending Pickup" ||
-          order.status === "Confirmed"
-        ) {
-          statusLabel = "Pending Pickup";
-        } else if (order.status === "Cancelled") {
-          statusLabel = "Cancelled";
-        }
-
-        return {
-          id: order._id,
-          status: statusLabel,
-          title: listing.title || "Listing",
-          seller: sellerName,
-        };
-      });
-
-      setReservations(mapped);
-    } catch (err) {
-      console.error("Error loading reservations:", err);
-      setReservations([]);
     } finally {
-      setLoading(false);
+      if (request === requestId.current && !signal?.aborted) setLoading(false);
+    }
+  }, [view, navigate]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchOrders({ signal: controller.signal });
+    return () => controller.abort();
+  }, [fetchOrders]);
+
+  const changeStatus = async (item, action) => {
+    if (busyRef.current) return;
+    if (action === "complete" && !window.confirm("Confirm that this item has been collected?")) return;
+    if (action === "cancel" && !window.confirm("Cancel this reservation and make the item available again?")) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/orders/${item.id}/status`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, expectedStatus: item.orderStatus }),
+      });
+      if (response.status === 401) { navigate("/login"); return; }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 409) await fetchOrders({ clearError: false });
+        throw new Error(result.message || "Could not update the reservation. Please refresh before retrying.");
+      }
+      setReservations((orders) => orders.map((order) =>
+        order._id === item.id ? { ...order, status: result.status } : order));
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
   };
-
-  fetchOrders();
-}, [navigate]);
-
 
   const totalPages = Math.ceil(reservations.length / RESERVATIONS_PER_PAGE);
 
@@ -99,17 +93,46 @@ export const Reservation = () => {
   const currentReservations = reservations.slice(
     indexOfFirst,
     indexOfFirst + RESERVATIONS_PER_PAGE
-  );
+  ).map((order) => ({
+    id: order._id,
+    orderStatus: order.status,
+    status: order.status === "Reserved" ? "Awaiting Seller Confirmation" : order.status,
+    title: order.listing?.title || "Listing",
+    image: Array.isArray(order.listing?.imageUrls) && order.listing.imageUrls[0]
+      ? order.listing.imageUrls[0]
+      : "/background.png",
+    price: typeof order.priceAtReservation === "number" ? order.priceAtReservation : order.listing?.price,
+    person: view === "selling" ? order.buyer : order.listing?.user,
+  }));
 
   const handleBack = () => navigate(-1);
   const handleGoHome = () => navigate("/landing-login");
   const handleContact = () => navigate("/about-login");
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    navigate(listingSearchUrl(true, { search: searchValue }));
   };
 
-  const handleChat = () => {
-    navigate("/chat");
+  const handleChat = async (item) => {
+    if (busyRef.current || !item.person?._id) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/start`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: item.person._id }),
+      });
+      if (response.status === 401) { navigate("/login"); return; }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not open this conversation.");
+      navigate("/chat", { state: { conversationId: result.conversationId } });
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
 
   const goToPage = (page) => {
@@ -158,6 +181,7 @@ export const Reservation = () => {
                 placeholder="Search"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1 bg-transparent outline-none text-black placeholder:text-[#444]"
               />
               <button type="button" onClick={handleSearch}>
@@ -184,12 +208,27 @@ export const Reservation = () => {
         {/* Heading section */}
         <section className="mb-8">
           <h1 className="font-semibold text-2xl md:text-3xl mb-2">
-            My Reserved Items
+            {view === "selling" ? "Requests for My Listings" : "My Reserved Items"}
           </h1>
           <p className="text-sm md:text-base text-gray-600 max-w-xl">
-            Here are the items you&apos;ve reserved. Contact the seller to
-            arrange pickup.
+            {view === "selling" ? "Confirm reservations and mark items complete after pickup."
+              : "Here are the items you've reserved. Contact the seller to arrange pickup."}
           </p>
+          <div className="flex flex-wrap gap-3 mt-5">
+            {[["buying", "My reservations"], ["selling", "Requests for my listings"]].map(([value, label]) => (
+              <button key={value} type="button" disabled={busy} aria-pressed={view === value}
+                onClick={() => {
+                  if (view === value) return;
+                  setView(value); setCurrentPage(1); setReservations([]); setLoading(true);
+                }}
+                className={`px-4 py-2 rounded-full border text-sm disabled:opacity-50 ${view === value ? "bg-black text-white" : "bg-white text-black"}`}>
+                {label}
+              </button>
+            ))}
+            <button type="button" disabled={busy || loading} onClick={() => fetchOrders()}
+              className="px-4 py-2 rounded-full border text-sm disabled:opacity-50">Refresh</button>
+          </div>
+          {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
         </section>
 
         {/* Reservations grid */}
@@ -198,9 +237,9 @@ export const Reservation = () => {
             <p className="text-sm text-gray-500">
               Loading your reservations...
             </p>
-          ) : currentReservations.length === 0 ? (
+          ) : error && currentReservations.length === 0 ? null : currentReservations.length === 0 ? (
             <p className="text-sm text-gray-500">
-              You have no reservations yet.
+              {view === "selling" ? "You have no reservation requests yet." : "You have no reservations yet."}
             </p>
           ) : (
             currentReservations.map((item) => (
@@ -208,8 +247,14 @@ export const Reservation = () => {
                 key={item.id}
                 className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover:scale-[1.01] transition-transform"
               >
-                {/* Placeholder image area */}
-                <div className="w-full h-40 bg-[#f2f2f2]" />
+                {/* Listing image area */}
+                <div className="w-full h-40 bg-[#f2f2f2] overflow-hidden">
+                  <img
+                    src={item.image || "/background.png"}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
 
                 {/* Text + button */}
                 <div className="flex-1 flex flex-col justify-between p-4 gap-3">
@@ -229,21 +274,41 @@ export const Reservation = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <p className="font-semibold text-sm md:text-base">
-                      {item.title}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-sm md:text-base line-clamp-1">
+                        {item.title}
+                      </p>
+                      {item.price != null && (
+                        <span className="font-semibold text-sm shrink-0">
+                          ₹{item.price.toLocaleString("en-IN")}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">
-                      Sold by {item.seller}
+                      {view === "selling" ? "Reserved by" : "Sold by"} {item.person?.name || item.person?.email || "User unavailable"}
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    onClick={handleChat}
+                    onClick={() => handleChat(item)}
+                    disabled={busy || !item.person?._id}
                     className="mt-2 inline-flex w-full justify-center items-center px-4 py-2 rounded-[999px] bg-black text-white text-sm shadow-button-shadow hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
                   >
-                    Chat with Seller
+                    Chat with {view === "selling" ? "Buyer" : "Seller"}
                   </button>
+                  {view === "selling" && item.orderStatus === "Reserved" && (
+                    <button type="button" disabled={busy} onClick={() => changeStatus(item, "confirm")}
+                      className="w-full px-4 py-2 rounded-full bg-black text-white text-sm disabled:opacity-50">Confirm reservation</button>
+                  )}
+                  {view === "selling" && item.orderStatus === "Pending Pickup" && (
+                    <button type="button" disabled={busy} onClick={() => changeStatus(item, "complete")}
+                      className="w-full px-4 py-2 rounded-full bg-black text-white text-sm disabled:opacity-50">Mark pickup complete</button>
+                  )}
+                  {["Reserved", "Pending Pickup"].includes(item.orderStatus) && (
+                    <button type="button" disabled={busy} onClick={() => changeStatus(item, "cancel")}
+                      className="w-full px-4 py-2 rounded-full border border-gray-300 text-sm disabled:opacity-50">Cancel reservation</button>
+                  )}
                 </div>
               </article>
             ))
@@ -302,43 +367,7 @@ export const Reservation = () => {
       </main>
 
       {/* -------- FOOTER -------- */}
-      <footer className="bg-white py-10 relative">
-        <img
-          src={divider}
-          className="w-[90%] mx-auto absolute top-0 left-1/2 -translate-x-1/2"
-          alt="divider"
-        />
-
-        <div className="w-[90%] mx-auto flex justify-between items-center pt-6">
-          <p className="font-subheading">
-            <span className="text-[#c90202]">Thapar</span>
-            <span className="text-black">Kart</span>
-          </p>
-
-          <div className="flex gap-3">
-            <img
-              src={facebookIcon}
-              className="w-6 cursor-pointer hover:scale-110 transition"
-              alt="facebook"
-            />
-            <img
-              src={instagramIcon}
-              className="w-6 cursor-pointer hover:scale-110 transition"
-              alt="instagram"
-            />
-            <img
-              src={linkedinIcon}
-              className="w-6 cursor-pointer hover:scale-110 transition"
-              alt="linkedin"
-            />
-            <img
-              src={youtubeIcon}
-              className="w-6 cursor-pointer hover:scale-110 transition"
-              alt="youtube"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

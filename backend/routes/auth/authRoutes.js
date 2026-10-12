@@ -18,7 +18,7 @@ import {
 const router = Router();
 
 // POST /api/auth/register
-router.post("/register", registerUser);
+router.post("/register", otpVerifyLimiter, registerUser);
 
 // POST /api/auth/login (with rate limiting)
 router.post("/login", loginLimiter, loginUser);

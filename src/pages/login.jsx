@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import image1 from "../assets/image-1.png";
 import BackButton from "../assets/icons/BackButton.svg";
 
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/Login.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // emails that should have admin access
 const ADMIN_EMAILS = [
@@ -116,7 +116,7 @@ export const Login = () => {
       } else {
         alert(data.message || "Failed to send OTP.");
       }
-    } catch (err) {
+    } catch {
       alert("Server error sending OTP.");
     } finally {
       setForgotLoading(false);
@@ -150,7 +150,7 @@ export const Login = () => {
       } else {
         alert(data.message || "Failed to reset password.");
       }
-    } catch (err) {
+    } catch {
       alert("Server error resetting password.");
     } finally {
       setForgotLoading(false);

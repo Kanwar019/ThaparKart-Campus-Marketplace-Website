@@ -5,6 +5,8 @@ import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import crypto from "crypto";
 import { sendMail } from "../utils/mailer.js";
+import process from "node:process";
+import { getJwtSecret } from "../config/auth.js";
 
 const JWT_EXPIRES_IN = "7d";
 const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES) || 5;
@@ -111,7 +113,7 @@ export const loginUser = async (req, res) => {
     // Sign JWT
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || "dev-secret-change-this",
+      getJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN }
     );
 

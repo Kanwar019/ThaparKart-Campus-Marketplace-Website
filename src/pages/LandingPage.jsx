@@ -1,14 +1,11 @@
 // src/pages/LandingPage.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import divider from "../assets/divider.svg";
+import { useNavigate, useLocation } from "react-router-dom";
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
 
 import "../styles/Landing_Page.css";
+import { listingSearchUrl } from "../utils/listingSearch.js";
 import image1 from "../assets/image-1.png";
 import image2 from "../assets/image-2.png";
 import image3 from "../assets/image-3.png";
@@ -21,12 +18,18 @@ const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
   <img src={MagnifyingGlassIcon} className={className} alt="search" />
 );
 
-export const LandingPage = () => {
+export const LandingPage = ({ loggedIn }) => {
   const [searchValue, setSearchValue] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    navigate(listingSearchUrl(isLogged, { search: searchValue }));
+  };
+
+  const handleHome = () => {
+    navigate(isLogged ? "/landing-login" : "/");
   };
 
   return (
@@ -37,6 +40,7 @@ export const LandingPage = () => {
           {/* Left: logo */}
           <button
             type="button"
+            onClick={handleHome}
             className="flex items-baseline gap-0 cursor-pointer"
           >
             <span className="text-[#c90202] font-subheading">Thapar</span>
@@ -47,6 +51,7 @@ export const LandingPage = () => {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               type="button"
+              onClick={handleHome}
               className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
             >
               Home
@@ -58,6 +63,7 @@ export const LandingPage = () => {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search"
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
               />
@@ -70,17 +76,27 @@ export const LandingPage = () => {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Login
-            </button>
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={() => navigate("/my-account/orders")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Account
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Login
+              </button>
+            )}
 
             <button
               type="button"
-              onClick={() => navigate("/about")}
+              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
               className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
             >
               <span className="font-small-text text-white">Contact Us</span>
@@ -111,7 +127,7 @@ export const LandingPage = () => {
               {/* Start Exploring CTA – fixed original size */}
               <button
                 type="button"
-                onClick={() => navigate("/shop")}
+                onClick={() => navigate(isLogged ? "/shop-login" : "/shop")}
                 className="mt-2 w-[235px] px-8 py-5 bg-black flex items-center justify-center text-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
               >
                 <span className="font-medium text-white text-2xl">
@@ -245,7 +261,7 @@ export const LandingPage = () => {
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <button
               type="button"
-              onClick={() => navigate("/shop")}
+              onClick={() => navigate(isLogged ? "/shop-login" : "/shop")}
               className="flex w-full sm:w-auto px-6 py-3 bg-black items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
             >
               <span className="font-medium text-white text-xl md:text-2xl">
@@ -255,7 +271,7 @@ export const LandingPage = () => {
 
             <button
               type="button"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate(isLogged ? "/create-listing-login" : "/login")}
               className="flex w-full sm:w-auto px-6 py-3 bg-[#e6e6e6] items-center justify-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#d0d0d0] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
             >
               <span className="font-medium text-black text-xl md:text-2xl">
@@ -276,7 +292,7 @@ export const LandingPage = () => {
             <div className="flex items-center gap-4 md:gap-6 self-end md:self-auto">
               <button
                 type="button"
-                onClick={() => navigate("/article")}
+                onClick={() => navigate(isLogged ? "/article-login" : "/article")}
                 className="inline-flex px-8 py-5 bg-black items-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
               >
                 <span className="font-medium text-white text-xl md:text-2xl">
@@ -286,7 +302,7 @@ export const LandingPage = () => {
 
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate(isLogged ? "/create-listing-login" : "/login")}
                 className="inline-flex px-8 py-5 bg-[#e6e6e6] items-center gap-2 rounded-[20px] shadow-button-shadow cursor-pointer hover:bg-[#d0d0d0] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
               >
                 <span className="font-medium text-[#000000e6] text-xl md:text-2xl">
@@ -342,48 +358,10 @@ export const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white py-10 relative">
-        {/* Divider */}
-        <img
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto top-0 left-0 right-0 h-px object-cover absolute inset-x-0"
-          alt="Divider"
-          src={divider}
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          {/* Footer logo */}
-          <p className="h-9 flex items-center justify-center font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202] font-subheading">Thapar</span>
-            <span className="text-black font-subheading">Kart</span>
-          </p>
-
-          {/* Social icons */}
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
 
+export const LandingPageWithLogin = (props) => <LandingPage loggedIn={true} {...props} />;
 export default LandingPage;

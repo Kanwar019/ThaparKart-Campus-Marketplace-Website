@@ -2,16 +2,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import divider from "../assets/divider.svg";
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
 import BackButton from "../assets/icons/BackButton.svg";
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
+import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/Edit_Listings.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 
 const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
@@ -80,7 +77,7 @@ export const EditListings = () => {
   }, [id]);
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    navigate(listingSearchUrl(true, { search: searchValue }));
   };
 
   const handleFileChange = (e) => {
@@ -95,7 +92,25 @@ export const EditListings = () => {
 
   const filesToRead = selected.slice(0, remainingSlots);
 
-  const readers = filesToRead.map(
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+  const validFiles = [];
+  for (const file of filesToRead) {
+    if (!file.type || !file.type.startsWith("image/")) {
+      alert(`${file.name} is not a supported image file.`);
+      continue;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`${file.name} exceeds the 2MB size limit.`);
+      continue;
+    }
+    validFiles.push(file);
+  }
+  if (!validFiles.length) {
+    e.target.value = "";
+    return;
+  }
+
+  const readers = validFiles.map(
     (file) =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -227,6 +242,7 @@ export const EditListings = () => {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search"
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
               />
@@ -486,43 +502,7 @@ export const EditListings = () => {
         </section>
       </main>
 
-      <footer className="bg-white py-10 relative mt-6">
-        <img
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto top-0 left-0 right-0 h-px object-cover absolute inset-x-0"
-          alt="Divider"
-          src={divider}
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          <p className="h-9 flex items-center justify-center font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202] font-subheading">Thapar</span>
-            <span className="text-black font-subheading">Kart</span>
-          </p>
-
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

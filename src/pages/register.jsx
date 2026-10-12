@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import image1 from "../assets/image-1.png";
 import BackButton from "../assets/icons/BackButton.svg";
 
+import { API_BASE_URL } from "../config/api.js";
 import "../styles/Register.css";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -53,7 +53,6 @@ export const Register = () => {
   useEffect(() => {
     if (!isOtpCooldown) return;
 
-    setCooldownSeconds((s) => (s > 0 ? s : 30));
     const interval = setInterval(() => {
       setCooldownSeconds((s) => {
         if (s <= 1) {

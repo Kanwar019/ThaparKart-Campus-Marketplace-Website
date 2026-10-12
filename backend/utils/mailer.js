@@ -1,5 +1,6 @@
 // backend/utils/mailer.js
 import nodemailer from "nodemailer";
+import process from "node:process";
 
 let transporter = null;
 let transporterVerified = false;
@@ -33,13 +34,14 @@ async function getTransporter() {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT) || 587,
-    secure: false, // STARTTLS on 587
+    secure: Number(SMTP_PORT) === 465,
+    requireTLS: Number(SMTP_PORT) !== 465,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
     tls: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
     },
   });
 
@@ -69,7 +71,7 @@ export async function sendMail({ to, subject, text, html, from }) {
   let t;
   try {
     t = await getTransporter();
-  } catch (err) {
+  } catch {
     // rethrow with friendly message (but keep original logged on server)
     throw new Error("Mail service not configured or transporter verify failed. See server logs.");
   }
@@ -89,7 +91,7 @@ export async function sendMail({ to, subject, text, html, from }) {
     try {
       const preview = nodemailer.getTestMessageUrl(info);
       if (preview) console.log("Preview URL:", preview);
-    } catch (e) {
+    } catch {
       // ignore
     }
 

@@ -1,14 +1,10 @@
 // src/pages/article.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-import divider from "../assets/divider.svg";
 import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
 import BackButton from "../assets/icons/BackButton.svg"; // ⬅ back icon
-import facebookIcon from "../assets/icons/facebook.svg";
-import instagramIcon from "../assets/icons/instagram.svg";
-import linkedinIcon from "../assets/icons/linkedin.svg";
-import youtubeIcon from "../assets/icons/youtube.svg";
+import { Footer } from "../components/Footer.jsx";
 import image11 from "../assets/image-11.png";
 import image12 from "../assets/image-12.png";
 import image13 from "../assets/image-13.png";
@@ -17,18 +13,21 @@ import image15 from "../assets/image-15.png";
 import image16 from "../assets/image-16.png";
 
 import "../styles/article.css";
+import { listingSearchUrl } from "../utils/listingSearch.js";
 
 // Simple local search icon (image)
 const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
   <img src={MagnifyingGlassIcon} className={className} alt="search" />
 );
 
-export const Article = () => {
+export const Article = ({ loggedIn }) => {
   const [searchValue, setSearchValue] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
   const handleSearch = () => {
-    console.log("Searching for:", searchValue);
+    navigate(listingSearchUrl(isLogged, { search: searchValue }));
   };
 
   return (
@@ -50,7 +49,7 @@ export const Article = () => {
             {/* Logo */}
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
               className="flex items-baseline gap-0 cursor-pointer"
             >
               <span className="text-[#c90202] font-subheading">Thapar</span>
@@ -62,7 +61,7 @@ export const Article = () => {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
               className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
             >
               Home
@@ -74,6 +73,7 @@ export const Article = () => {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search"
                 className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
               />
@@ -86,19 +86,28 @@ export const Article = () => {
               </button>
             </div>
 
-            {/* Login */}
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Login
-            </button>
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={() => navigate("/my-account/orders")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Account
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
+              >
+                Login
+              </button>
+            )}
 
             {/* Contact Us */}
             <button
               type="button"
-              onClick={() => navigate("/about")}
+              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
               className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
             >
               <span className="font-small-text text-white">Contact Us</span>
@@ -265,49 +274,12 @@ export const Article = () => {
         </section>
       </main>
 
-      {/* FOOTER (same structure as LandingPage) */}
-      <footer className="bg-white py-10 relative">
-        {/* Divider */}
-        <img
-          className="w-[calc(100%_-_160px)] max-w-[1200px] mx-auto top-0 left-0 right-0 h-px object-cover absolute inset-x-0"
-          alt="Divider"
-          src={divider}
-        />
-
-        <div className="w-[90%] mx-auto flex items-center justify-between pt-4">
-          {/* Footer logo */}
-          <p className="h-9 flex items-center justify-center font-subheading text-[length:var(--subheading-font-size)]">
-            <span className="text-[#c90202] font-subheading">Thapar</span>
-            <span className="text-black font-subheading">Kart</span>
-          </p>
-
-          {/* Social icons */}
-          <div className="flex items-center gap-3">
-            <img
-              src={facebookIcon}
-              alt="facebook"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={instagramIcon}
-              alt="instagram"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={linkedinIcon}
-              alt="linkedin"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-            <img
-              src={youtubeIcon}
-              alt="youtube"
-              className="w-6 h-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            />
-          </div>
-        </div>
-      </footer>
+      {/* FOOTER */}
+      <Footer />
     </div>
   );
 };
+
+export const ArticleWithLogin = (props) => <Article loggedIn={true} {...props} />;
 
 export default Article;

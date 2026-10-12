@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { getJwtSecret } from "../config/auth.js";
 
 export const authRequired = async (req, res, next) => {
   try {
@@ -11,7 +12,7 @@ export const authRequired = async (req, res, next) => {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "dev-secret-change-this"
+      getJwtSecret()
     );
 
     const user = await User.findById(decoded.userId).select("-passwordHash");
