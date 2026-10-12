@@ -1,9 +1,6 @@
-// src/pages/article.jsx
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-
-import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import BackButton from "../assets/icons/BackButton.svg"; // ⬅ back icon
+import React from "react";
+import { useLocation } from "react-router-dom";
+import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import image11 from "../assets/image-11.png";
 import image12 from "../assets/image-12.png";
@@ -13,159 +10,66 @@ import image15 from "../assets/image-15.png";
 import image16 from "../assets/image-16.png";
 
 import "../styles/article.css";
-import { listingSearchUrl } from "../utils/listingSearch.js";
-
-// Simple local search icon (image)
-const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
-  <img src={MagnifyingGlassIcon} className={className} alt="search" />
-);
 
 export const Article = ({ loggedIn }) => {
-  const [searchValue, setSearchValue] = useState("");
-  const navigate = useNavigate();
   const location = useLocation();
   const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
-  const handleSearch = () => {
-    navigate(listingSearchUrl(isLogged, { search: searchValue }));
-  };
-
   return (
-    <div className="bg-white min-h-screen flex flex-col">
-      {/* TOP NAV (similar to LandingPage, with back button) */}
-      <header className="w-full h-[164px] bg-white flex items-center">
-        <div className="w-[90%] mx-auto flex items-center justify-between">
-          {/* Left: back button + logo */}
-          <div className="flex items-center gap-4">
-            {/* Back button */}
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="cursor-pointer hover:opacity-70 transition-opacity"
-            >
-              <img src={BackButton} alt="Back" className="w-6 h-6" />
-            </button>
-
-            {/* Logo */}
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
-              className="flex items-baseline gap-0 cursor-pointer"
-            >
-              <span className="text-[#c90202] font-subheading">Thapar</span>
-              <span className="text-black font-subheading">Kart</span>
-            </button>
-          </div>
-
-          {/* Right nav */}
-          <div className="flex items-center gap-4 lg:gap-8">
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Home
-            </button>
-
-            {/* Search bar */}
-            <div className="hidden sm:flex w-[260px] md:w-[320px] lg:w-[360px] items-center justify-between px-4 py-2 rounded-[999px] border border-[#0000001a] bg-white focus-within:border-black transition">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search"
-                className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
-              />
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="flex items-center justify-center cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-              >
-                <HealthiconsMagnifyingGlassOutline className="w-5 h-5" />
-              </button>
-            </div>
-
-            {isLogged ? (
-              <button
-                type="button"
-                onClick={() => navigate("/my-account/orders")}
-                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-              >
-                Account
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-              >
-                Login
-              </button>
-            )}
-
-            {/* Contact Us */}
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
-              className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
-            >
-              <span className="font-small-text text-white">Contact Us</span>
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="bg-white dark:bg-[#121212] min-h-screen flex flex-col text-gray-900 dark:text-neutral-100 transition-colors">
+      {/* TOP NAV */}
+      <Header loggedIn={isLogged} showBack={true} />
 
       {/* MAIN CONTENT */}
       <main className="flex-1">
         {/* Article hero + heading */}
-        <section className="w-[90%] mx-auto pt-8 md:pt-10 pb-12 md:pb-16">
-          <div className="flex flex-col gap-8">
+        <section className="w-[92%] sm:w-[90%] max-w-6xl mx-auto pt-6 sm:pt-10 pb-10 sm:pb-16">
+          <div className="flex flex-col gap-6 sm:gap-8">
             {/* Heading + intro */}
-            <div className="flex flex-col gap-6 max-w-4xl">
-              {/* HEADING – now bold */}
-              <h1 className="font-title font-bold text-[32px] md:text-[40px] lg:text-[48px] leading-snug">
-                <span className="text-black">
+            <div className="flex flex-col gap-4 sm:gap-6 max-w-4xl">
+              {/* HEADING */}
+              <h1 className="font-title font-bold text-[28px] sm:text-[38px] lg:text-[48px] leading-tight sm:leading-snug">
+                <span className="text-black dark:text-white">
                   Making Sustainability a Habit: How{" "}
                 </span>
                 <span className="text-[#c90202]">Thapar</span>
-                <span className="text-black">
+                <span className="text-black dark:text-white">
                   {" "}
                   Kart Helps Students Go Green
                 </span>
               </h1>
 
-              <p className="font-subheading text-[#000000bf]">
+              <p className="font-subheading text-base sm:text-lg text-[#000000bf] dark:text-neutral-300">
                 Small steps towards sustainability can create a big impact — see
                 how ThaparKart encourages Thapar students to reduce waste
                 through reuse.
               </p>
             </div>
 
-            {/* Hero image – shadow same as LandingPage */}
+            {/* Hero image */}
             <div
-              className="w-full h-[260px] sm:h-[360px] md:h-[480px] lg:h-[650px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
+              className="w-full h-[220px] sm:h-[360px] md:h-[480px] lg:h-[600px] rounded-2xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center overflow-hidden"
               style={{ backgroundImage: `url(${image15})` }}
             />
           </div>
         </section>
 
         {/* Article body – first text block */}
-        <section className="w-[90%] mx-auto pb-12 md:pb-16">
-          <div className="text-[18px] md:text-[20px] leading-[1.8] text-black font-small text-justify">
-            <p className="mb-6">
+        <section className="w-[92%] sm:w-[90%] max-w-6xl mx-auto pb-10 sm:pb-16">
+          <div className="text-[16px] sm:text-[18px] md:text-[20px] leading-[1.8] text-gray-800 dark:text-neutral-200 font-small text-left sm:text-justify space-y-6">
+            <p>
               At ThaparKart, we believe that one student’s unused item can be another’s perfect find. 
               By promoting buying and selling within campus, we reduce unnecessary waste and 
               encourage a circular economy.
             </p>
 
-            <p className="mb-6">
+            <p>
               From cycle resales to book exchanges, every transaction on ThaparKart saves resources 
               that would otherwise go unused. It’s not just about saving money — it’s about being 
               mindful of what we own and how we share it.
             </p>
 
-            <p className="mb-6">
+            <p>
               Every product listed tells a story — a laptop that found a new home, a set of notes 
               passed on to help someone score better, or a hostel chair reused instead of being 
               discarded. Each small action contributes to a greener Thapar campus.
@@ -178,24 +82,24 @@ export const Article = ({ loggedIn }) => {
           </div>
         </section>
 
-        {/* Two side images – shadow same as LandingPage */}
-        <section className="w-[90%] mx-auto pb-12 md:pb-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Two side images */}
+        <section className="w-[92%] sm:w-[90%] max-w-6xl mx-auto pb-10 sm:pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             <div
-              className="w-full h-[260px] md:h-[360px] lg:h-[436px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
+              className="w-full h-[220px] sm:h-[300px] md:h-[380px] rounded-2xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
               style={{ backgroundImage: `url(${image14})` }}
             />
             <div
-              className="w-full h-[260px] md:h-[360px] lg:h-[436px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
+              className="w-full h-[220px] sm:h-[300px] md:h-[380px] rounded-2xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] bg-cover bg-center"
               style={{ backgroundImage: `url(${image16})` }}
             />
           </div>
         </section>
 
         {/* Second text block */}
-        <section className="w-[90%] mx-auto pb-12 md:pb-16">
-          <div className="text-[18px] md:text-[20px] leading-[1.8] text-black font-small text-justify">
-            <p className="mb-6">
+        <section className="w-[92%] sm:w-[90%] max-w-6xl mx-auto pb-10 sm:pb-16">
+          <div className="text-[16px] sm:text-[18px] md:text-[20px] leading-[1.8] text-gray-800 dark:text-neutral-200 font-small text-left sm:text-justify space-y-6">
+            <p>
               ThaparKart is more than just a campus marketplace — it’s a community built by students, 
               for students. Whether you’re looking for affordable textbooks, a cycle to commute, or 
               decor for your hostel room.
@@ -210,15 +114,15 @@ export const Article = ({ loggedIn }) => {
         </section>
 
         {/* You May Also Like */}
-        <section className="w-[90%] mx-auto pb-16 md:pb-20">
-          <h2 className="font-heading text-[24px] md:text-[28px] lg:text-[32px] text-black mb-6">
+        <section className="w-[92%] sm:w-[90%] max-w-6xl mx-auto pb-16 md:pb-20">
+          <h2 className="font-heading text-[22px] sm:text-[28px] lg:text-[32px] text-black dark:text-white mb-6">
             You May Also Like
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {/* Card 1 */}
-            <div className="flex flex-col items-start gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
-              <div className="w-full h-[220px] md:h-[260px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7]">
+            <div className="flex flex-col items-start gap-3 sm:gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
+              <div className="w-full h-[200px] sm:h-[240px] rounded-xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7] dark:bg-neutral-800">
                 <img
                   src={image11}
                   alt="5 Smart Ways to Reuse and Save on Campus"
@@ -226,18 +130,18 @@ export const Article = ({ loggedIn }) => {
                 />
               </div>
               <div>
-                <p className="font-body-text text-black">
+                <p className="font-body-text font-semibold text-black dark:text-white">
                   5 Smart Ways to Reuse and Save on Campus
                 </p>
-                <p className="font-body-text text-[#828282]">
+                <p className="font-body-text text-sm text-[#828282] dark:text-neutral-400 mt-1">
                   ThaparKart Editorial Team
                 </p>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="flex flex-col items-start gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
-              <div className="w-full h-[220px] md:h-[260px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7]">
+            <div className="flex flex-col items-start gap-3 sm:gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
+              <div className="w-full h-[200px] sm:h-[240px] rounded-xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7] dark:bg-neutral-800">
                 <img
                   src={image12}
                   alt="Student Success Stories"
@@ -245,16 +149,16 @@ export const Article = ({ loggedIn }) => {
                 />
               </div>
               <div>
-                <p className="font-body-text text-black">
+                <p className="font-body-text font-semibold text-black dark:text-white">
                   Student Success Stories: How I Earned ₹2000 from My Old Books
                 </p>
-                <p className="font-body-text text-[#828282]">Rohan Gupta</p>
+                <p className="font-body-text text-sm text-[#828282] dark:text-neutral-400 mt-1">Rohan Gupta</p>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="flex flex-col items-start gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
-              <div className="w-full h-[220px] md:h-[260px] rounded-lg shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7]">
+            <div className="flex flex-col items-start gap-3 sm:gap-4 cursor-pointer hover:scale-[1.02] transition-transform">
+              <div className="w-full h-[200px] sm:h-[240px] rounded-xl shadow-[0px_6px_20px_rgba(0,0,0,0.05)] overflow-hidden bg-[#f7f7f7] dark:bg-neutral-800">
                 <img
                   src={image13}
                   alt="Inside ThaparKart"
@@ -262,10 +166,10 @@ export const Article = ({ loggedIn }) => {
                 />
               </div>
               <div>
-                <p className="font-body-text text-black">
+                <p className="font-body-text font-semibold text-black dark:text-white">
                   Inside ThaparKart: Building the Campus Marketplace Together
                 </p>
-                <p className="font-body-text text-[#828282]">
+                <p className="font-body-text text-sm text-[#828282] dark:text-neutral-400 mt-1">
                   ThaparKart Team
                 </p>
               </div>

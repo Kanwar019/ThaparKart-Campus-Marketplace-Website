@@ -1,25 +1,15 @@
 // src/pages/edit_listings.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import BackButton from "../assets/icons/BackButton.svg";
+import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { API_BASE_URL } from "../config/api.js";
 
 import "../styles/Edit_Listings.css";
-import { listingSearchUrl } from "../utils/listingSearch.js";
-
-
-const HealthiconsMagnifyingGlassOutline = ({ className = "" }) => (
-  <img src={MagnifyingGlassIcon} className={className} alt="search" />
-);
 
 export const EditListings = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // /edit-listings/:id
-
-  const [searchValue, setSearchValue] = useState("");
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -76,62 +66,55 @@ export const EditListings = () => {
     fetchListing();
   }, [id]);
 
-  const handleSearch = () => {
-    navigate(listingSearchUrl(true, { search: searchValue }));
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
+
+    const remainingSlots = 5 - imagePreviews.length;
+    if (remainingSlots <= 0) {
+      alert("You can upload up to 5 images only.");
+      return;
+    }
+
+    const filesToRead = selected.slice(0, remainingSlots);
+
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const validFiles = [];
+    for (const file of filesToRead) {
+      if (!file.type || !file.type.startsWith("image/")) {
+        alert(`${file.name} is not a supported image file.`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`${file.name} exceeds the 2MB size limit.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+    if (!validFiles.length) {
+      e.target.value = "";
+      return;
+    }
+
+    const readers = validFiles.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    );
+
+    Promise.all(readers)
+      .then((results) => {
+        setImagePreviews((prev) => [...prev, ...results]);
+        setSaved(false);
+        e.target.value = "";
+      })
+      .catch((err) => console.error("Error reading files:", err));
   };
 
-  const handleFileChange = (e) => {
-  const selected = Array.from(e.target.files || []);
-  if (!selected.length) return;
-
-  const remainingSlots = 5 - imagePreviews.length;
-  if (remainingSlots <= 0) {
-    alert("You can upload up to 5 images only.");
-    return;
-  }
-
-  const filesToRead = selected.slice(0, remainingSlots);
-
-  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-  const validFiles = [];
-  for (const file of filesToRead) {
-    if (!file.type || !file.type.startsWith("image/")) {
-      alert(`${file.name} is not a supported image file.`);
-      continue;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      alert(`${file.name} exceeds the 2MB size limit.`);
-      continue;
-    }
-    validFiles.push(file);
-  }
-  if (!validFiles.length) {
-    e.target.value = "";
-    return;
-  }
-
-  const readers = validFiles.map(
-    (file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      })
-  );
-
-  Promise.all(readers)
-    .then((results) => {
-      setImagePreviews((prev) => [...prev, ...results]);
-      setSaved(false);
-      // optional: clear input so same files can be selected again if needed
-      e.target.value = "";
-    })
-    .catch((err) => console.error("Error reading files:", err));
-};
-
-
-  // NEW: remove single image from previews
   const handleRemoveImage = (index) => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     setSaved(false);
@@ -147,7 +130,7 @@ export const EditListings = () => {
         price: price ? Number(price) : 0,
         category,
         condition,
-        imageUrls: imagePreviews, // these will become the listing images
+        imageUrls: imagePreviews,
       };
 
       const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
@@ -206,82 +189,17 @@ export const EditListings = () => {
   };
 
   return (
-    <div className="bg-[#f7f7f7] min-h-screen flex flex-col">
-      <header className="w-full h-[164px] bg-white flex items-center shadow-sm">
-        <div className="w-[90%] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="cursor-pointer hover:opacity-70 transition-opacity"
-            >
-              <img src={BackButton} alt="Back" className="w-6 h-6" />
-            </button>
+    <div className="bg-white dark:bg-[#121212] min-h-screen flex flex-col text-gray-900 dark:text-neutral-100 transition-colors">
+      <Header loggedIn={true} showBack={true} />
 
-            <button
-              type="button"
-              onClick={() => navigate("/landing-login")}
-              className="flex items-baseline gap-0 cursor-pointer"
-            >
-              <span className="text-[#c90202] font-subheading">Thapar</span>
-              <span className="text-black font-subheading">Kart</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4 lg:gap-8">
-            <button
-              type="button"
-              onClick={() => navigate("/landing-login")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Home
-            </button>
-
-            <div className="hidden sm:flex w-[260px] md:w-[320px] lg:w-[360px] items-center justify-between px-4 py-2 rounded-[999px] border border-[#0000001a] bg-white focus-within:border-black transition">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search"
-                className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
-              />
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="flex items-center justify-center cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-              >
-                <HealthiconsMagnifyingGlassOutline className="w-5 h-5" />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate("/my-account/orders")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors"
-            >
-              Account
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/about-login")}
-              className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
-            >
-              <span className="font-small-text text-white">Contact Us</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 py-8 md:py-12">
-        <section className="w-[95%] max-w-[1100px] mx-auto">
+      <main className="flex-1 py-6 sm:py-10">
+        <section className="w-[92%] sm:w-[90%] max-w-[1100px] mx-auto">
           {loadingListing ? (
-            <div className="bg-white rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600">
+            <div className="bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600 dark:text-neutral-400">
               Loading your listing…
             </div>
           ) : notFound ? (
-            <div className="bg-white rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600">
+            <div className="bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600 dark:text-neutral-400">
               Listing not found. Please go back to{" "}
               <button
                 type="button"
@@ -293,12 +211,12 @@ export const EditListings = () => {
               .
             </div>
           ) : (
-            <div className="bg-white rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-5 py-6 md:px-10 md:py-10">
-              <div className="mb-8">
-                <h1 className="font-bold text-[24px] md:text-[28px] lg:text-[30px] text-black">
+            <div className="bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-5 py-6 md:px-10 md:py-10">
+              <div className="mb-6 sm:mb-8">
+                <h1 className="font-bold text-[22px] sm:text-[28px] lg:text-[30px] text-black dark:text-white">
                   Edit Your Listing
                 </h1>
-                <p className="mt-1 text-[13px] md:text-sm text-[#666666]">
+                <p className="mt-1 text-[13px] md:text-sm text-[#666666] dark:text-neutral-400">
                   Update the details of your existing listing. Changes will be
                   visible to buyers immediately after saving.
                 </p>
@@ -306,11 +224,11 @@ export const EditListings = () => {
 
               <form className="space-y-6" onSubmit={handleSaveChanges}>
                 <div className="space-y-3">
-                  <p className="text-sm md:text-[15px] font-medium text-[#0d1b2a]">
+                  <p className="text-sm md:text-[15px] font-medium text-[#0d1b2a] dark:text-neutral-200">
                     Photos (Add up to 5)
                   </p>
 
-                  <label className="block w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white py-6 px-4 text-center cursor-pointer hover:border-[#c90202] transition-colors">
+                  <label className="block w-full rounded-2xl border-2 border-dashed border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800/40 py-6 px-4 text-center cursor-pointer hover:border-[#c90202] transition-colors">
                     <input
                       type="file"
                       accept=".png,.jpg,.jpeg,.webp,.gif,image/*"
@@ -319,10 +237,10 @@ export const EditListings = () => {
                       onChange={handleFileChange}
                     />
                     <div className="flex flex-col items-center gap-1 text-xs md:text-[13px]">
-                      <div className="font-semibold text-[#0d1b2a]">
+                      <div className="font-semibold text-[#0d1b2a] dark:text-white">
                         Drag and drop your images here or click to browse.
                       </div>
-                      <div className="text-[#777777]">
+                      <div className="text-[#777777] dark:text-neutral-400">
                         Add a great photo to sell your item faster!
                       </div>
                     </div>
@@ -333,7 +251,7 @@ export const EditListings = () => {
                       {imagePreviews.slice(0, 5).map((src, i) => (
                         <div
                           key={i}
-                          className="relative w-24 h-24 bg-[#f2f2f2] rounded-xl overflow-hidden"
+                          className="relative w-24 h-24 bg-[#f2f2f2] dark:bg-neutral-800 rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700"
                         >
                           <img
                             src={src}
@@ -343,7 +261,7 @@ export const EditListings = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(i)}
-                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[10px] leading-none hover:bg-red-50"
+                            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 flex items-center justify-center text-xs leading-none hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 shadow"
                           >
                             ×
                           </button>
@@ -354,7 +272,7 @@ export const EditListings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a]">
+                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a] dark:text-neutral-200">
                     Item Title
                   </label>
                   <input
@@ -364,12 +282,12 @@ export const EditListings = () => {
                       setTitle(e.target.value);
                       setSaved(false);
                     }}
-                    className="w-full h-11 rounded-2xl border border-gray-300 px-4 text-sm md:text-[15px] outline-none bg-white"
+                    className="w-full h-11 rounded-2xl border border-gray-300 dark:border-neutral-700 px-4 text-sm md:text-[15px] outline-none bg-white dark:bg-neutral-800 text-black dark:text-white focus:border-[#c90202] dark:focus:border-[#c90202] transition"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a]">
+                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a] dark:text-neutral-200">
                     Description
                   </label>
                   <textarea
@@ -378,13 +296,13 @@ export const EditListings = () => {
                       setDescription(e.target.value);
                       setSaved(false);
                     }}
-                    className="w-full min-h-[140px] rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm md:text-[15px] outline-none resize-none"
+                    className="w-full min-h-[140px] rounded-2xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm md:text-[15px] outline-none resize-none text-black dark:text-white focus:border-[#c90202] dark:focus:border-[#c90202] transition"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a]">
+                    <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a] dark:text-neutral-200">
                       Category
                     </label>
                     <div className="relative">
@@ -394,7 +312,7 @@ export const EditListings = () => {
                           setCategory(e.target.value);
                           setSaved(false);
                         }}
-                        className="w-full h-11 rounded-2xl border border-gray-300 bg-white px-4 pr-10 text-sm md:text-[15px] outline-none appearance-none"
+                        className="w-full h-11 rounded-2xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 pr-10 text-sm md:text-[15px] outline-none appearance-none text-black dark:text-white focus:border-[#c90202] dark:focus:border-[#c90202] transition"
                       >
                         <option value="">Select a category</option>
                         <option value="Transport">Transport</option>
@@ -418,7 +336,7 @@ export const EditListings = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a]">
+                    <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a] dark:text-neutral-200">
                       Condition
                     </label>
                     <div className="relative">
@@ -428,7 +346,7 @@ export const EditListings = () => {
                           setCondition(e.target.value);
                           setSaved(false);
                         }}
-                        className="w-full h-11 rounded-2xl border border-gray-300 bg-white px-4 pr-10 text-sm md:text-[15px] outline-none appearance-none"
+                        className="w-full h-11 rounded-2xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 pr-10 text-sm md:text-[15px] outline-none appearance-none text-black dark:text-white focus:border-[#c90202] dark:focus:border-[#c90202] transition"
                       >
                         <option value="">Select condition</option>
                         <option value="New">New</option>
@@ -445,11 +363,11 @@ export const EditListings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a]">
+                  <label className="text-[11px] md:text-xs font-medium text-[#0d1b2a] dark:text-neutral-200">
                     Price
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#666666] text-sm">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#666666] dark:text-neutral-400 text-sm">
                       ₹
                     </span>
                     <input
@@ -461,16 +379,16 @@ export const EditListings = () => {
                         setPrice(e.target.value);
                         setSaved(false);
                       }}
-                      className="w-full h-11 rounded-2xl border border-gray-300 bg-white pl-8 pr-4 text-sm md:text-[15px] outline-none"
+                      className="w-full h-11 rounded-2xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 pl-8 pr-4 text-sm md:text-[15px] outline-none text-black dark:text-white focus:border-[#c90202] dark:focus:border-[#c90202] transition"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 mt-2 border-t border-[#0000000f] flex items-center justify-between flex-wrap gap-3">
+                <div className="pt-4 mt-2 border-t border-[#0000000f] dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="px-4 py-2 rounded-[999px] border border-[#e11d48] text-[#e11d48] text-sm hover:bg-[#fef2f2] transition-colors"
+                    className="px-4 py-2 rounded-[999px] border border-[#e11d48] text-[#e11d48] dark:text-red-400 dark:border-red-500 text-sm hover:bg-[#fef2f2] dark:hover:bg-red-950/40 transition-colors"
                   >
                     Delete Listing
                   </button>
@@ -490,7 +408,7 @@ export const EditListings = () => {
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="px-6 py-3 rounded-[999px] text-sm border border-[#0000001a] bg-white hover:bg-[#f5f5f5] transition-colors"
+                      className="px-6 py-3 rounded-[999px] text-sm border border-[#0000001a] dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-800 dark:text-neutral-200 hover:bg-[#f5f5f5] dark:hover:bg-neutral-700 transition-colors"
                     >
                       Cancel
                     </button>

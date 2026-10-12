@@ -1,13 +1,14 @@
 // src/pages/admin page.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../contexts/ThemeContext";
 import { API_BASE_URL } from "../config/api.js";
 import "../styles/Admin_Page.css";
 
 export const AdminPage = ({ authorized = true }) => {
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useTheme();
   const [search, setSearch] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(authorized);
 
   const [feedbacks, setFeedbacks] = useState([]);
@@ -22,12 +23,9 @@ export const AdminPage = ({ authorized = true }) => {
   // 🔹 NEW: recent listings for "Recent activity"
   const [recentListings, setRecentListings] = useState([]);
 
-  // Load dark mode & admin flag
+  // Load admin flag
   useEffect(() => {
     try {
-      const storedDark = localStorage.getItem("adminDarkMode");
-      if (storedDark === "true") setDarkMode(true);
-
       const storedAdmin = localStorage.getItem("isAdmin");
       setIsAdmin(authorized || storedAdmin === "true");
     } catch {
@@ -130,16 +128,6 @@ export const AdminPage = ({ authorized = true }) => {
 
   const handleBack = () => navigate(-1);
   const handleHome = () => navigate("/landing-login");
-
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("adminDarkMode", next ? "true" : "false");
-      } catch {}
-      return next;
-    });
-  };
 
   const formatDate = (iso) => {
     if (!iso) return "";
@@ -252,10 +240,10 @@ export const AdminPage = ({ authorized = true }) => {
 
   return (
     <div
-      className={`${pageBg} overflow-hidden w-full min-h-screen relative p-6 transition-colors`}
+      className={`${pageBg} overflow-hidden w-full min-h-screen relative p-4 sm:p-6 transition-colors`}
     >
       {/* ---------- HEADER ---------- */}
-      <div className="flex items-center justify-between w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
         {/* BACK + BRAND */}
         <div className="flex items-center gap-4">
           <button
@@ -276,7 +264,7 @@ export const AdminPage = ({ authorized = true }) => {
         </div>
 
         {/* RIGHT: HOME + SEARCH + EXPORT + THEME */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Dark mode toggle */}
           <button
             type="button"
@@ -300,7 +288,7 @@ export const AdminPage = ({ authorized = true }) => {
 
           {/* Search input */}
           <div
-            className={`flex items-center rounded-lg px-3 py-2 border ${borderColor} ${
+            className={`flex items-center rounded-lg px-3 py-2 border ${borderColor} flex-1 sm:flex-initial min-w-[140px] ${
               darkMode ? "bg-[#111111]" : "bg-white"
             }`}
           >
@@ -342,7 +330,7 @@ export const AdminPage = ({ authorized = true }) => {
       </div>
 
       {/* ---------- STATS CARDS ---------- */}
-      <div className="grid grid-cols-3 gap-6 mt-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-10">
         <div className={`p-5 rounded-xl shadow ${cardBg}`}>
           <p className={`text-sm ${subtleText}`}>Active users</p>
           <h2 className="text-3xl font-bold mt-2">
@@ -369,9 +357,9 @@ export const AdminPage = ({ authorized = true }) => {
       </div>
 
       {/* ---------- CONTENT AREA ---------- */}
-      <div className="flex gap-6 w-full mt-10">
+      <div className="flex flex-col lg:flex-row gap-6 w-full mt-6 sm:mt-10">
         {/* LEFT: FEEDBACK TABLE */}
-        <div className={`flex-1 rounded-xl shadow p-5 ${cardBg}`}>
+        <div className={`flex-1 rounded-xl shadow p-4 sm:p-5 ${cardBg} overflow-x-auto`}>
           <h3 className="font-semibold text-lg mb-4">User Feedback</h3>
 
           <div
@@ -392,9 +380,9 @@ export const AdminPage = ({ authorized = true }) => {
             filteredFeedbacks.map((fb, idx) => (
               <div
                 key={fb._id || idx}
-                className={`flex justify-between items-start py-4 border-b ${borderColor}`}
+                className={`flex flex-col sm:flex-row justify-between items-start gap-3 py-4 border-b ${borderColor}`}
               >
-                <div className="max-w-[55%]">
+                <div className="w-full sm:max-w-[55%]">
                   <p className="font-semibold">
                     {(fb.message || "").length > 70
                       ? `${fb.message.slice(0, 70)}…`
@@ -405,7 +393,7 @@ export const AdminPage = ({ authorized = true }) => {
                   </p>
                 </div>
 
-                <div className="text-sm text-right mr-4 min-w-[160px]">
+                <div className="text-sm text-left sm:text-right mr-0 sm:mr-4 min-w-[140px]">
                   <p>
                     {fb.firstName || fb.lastName
                       ? `${fb.firstName || ""} ${fb.lastName || ""}`
@@ -414,7 +402,7 @@ export const AdminPage = ({ authorized = true }) => {
                   <p className={subtleText}>{fb.email || "No email"}</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 self-end sm:self-auto">
                   <button
                     type="button"
                     onClick={() => handleViewFeedback(fb)}
@@ -440,7 +428,7 @@ export const AdminPage = ({ authorized = true }) => {
         </div>
 
         {/* RIGHT: Quick Actions + Recent Activity */}
-        <div className="w-[30%] flex flex-col gap-6">
+        <div className="w-full lg:w-[32%] flex flex-col gap-6">
           <div className={`rounded-xl shadow p-5 ${cardBg}`}>
             <h3 className="font-semibold mb-3">Quick actions</h3>
 

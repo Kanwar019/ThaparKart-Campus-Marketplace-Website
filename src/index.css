@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    transition-property: color, background-color, border-color;
+    transition-duration: 150ms;
+  }
+}
+
+/* Global Dark Mode Support for Footer (preserves exact test-matching JSX string) */
+html.dark footer {
+  background-color: #121212 !important;
+  border-top: 1px solid #262626;
+}
+html.dark footer p span.text-black {
+  color: #ffffff !important;
+}
+html.dark footer img[alt="Divider"],
+html.dark footer img[alt="divider"] {
+  opacity: 0.15;
+}
+html.dark footer img[alt="facebook"],
+html.dark footer img[alt="instagram"],
+html.dark footer img[alt="linkedin"],
+html.dark footer img[alt="youtube"] {
+  filter: invert(1) brightness(0.9);
+}

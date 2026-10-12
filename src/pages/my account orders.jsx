@@ -2,22 +2,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/logout.js";
-import { listingSearchUrl } from "../utils/listingSearch.js";
 import { API_BASE_URL } from "../config/api.js";
+import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { AccountSidebar } from "../components/AccountSidebar.jsx";
 import { AccountTabs } from "../components/AccountTabs.jsx";
 
-import magnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import BackButton from "../assets/icons/BackButton.svg";
 import editIcon from "../assets/icons/edit.svg";
 
 import "../styles/My_Account_Orders.css";
 
 export const MyAccountOrders = () => {
   const navigate = useNavigate();
-
-  const [searchValue, setSearchValue] = useState("");
 
   // Profile
   const [profile, setProfile] = useState({
@@ -39,18 +35,10 @@ export const MyAccountOrders = () => {
   const [loading, setLoading] = useState(true);
 
   // navigation
-  const handleBack = () => navigate("/landing-login");
-  const handleGoHome = () => navigate("/landing-login");
-  const handleContact = () => navigate("/about-login");
   const handleLogout = () => logout(API_BASE_URL, navigate);
   const handleAdminDashboard = () => navigate("/admin");
   const handleReservations = () => navigate("/reservation");
   const handleMyListings = () => navigate("/my-listing");
-
-
-  const handleSearch = () => {
-    navigate(listingSearchUrl(true, { search: searchValue }));
-  };
 
   // -------- FETCH PROFILE + ORDERS FROM BACKEND --------
   useEffect(() => {
@@ -147,71 +135,15 @@ export const MyAccountOrders = () => {
   };
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-neutral-100 min-h-screen flex flex-col transition-colors">
       {/* -------- HEADER -------- */}
-      <header className="w-full h-[140px] bg-white flex items-center">
-        <div className="w-[90%] mx-auto flex items-center justify-between">
-          {/* Left: Back + Logo (like ArticleWithLogin) */}
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="cursor-pointer hover:opacity-70 transition-opacity"
-            >
-              <img src={BackButton} alt="Back" className="w-6 h-6" />
-            </button>
-
-            <div
-              className="cursor-pointer select-none"
-              onClick={handleGoHome}
-            >
-              <span className="text-[#c90202] font-subheading">Thapar</span>
-              <span className="text-black font-subheading">Kart</span>
-            </div>
-          </div>
-
-          {/* Right: Nav */}
-          <div className="flex items-center gap-6">
-            <button
-              onClick={handleGoHome}
-              className="font-body-text text-black hover:text-[#c90202] transition"
-            >
-              Home
-            </button>
-
-            {/* Search */}
-            <div className="hidden sm:flex w-[300px] px-4 py-2 rounded-full border border-[#0000001a]">
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="flex-1 bg-transparent outline-none text-black placeholder:text-[#444]"
-              />
-              <button type="button" onClick={handleSearch}>
-                <img
-                  src={magnifyingGlassIcon}
-                  className="w-5 cursor-pointer"
-                  alt="search"
-                />
-              </button>
-            </div>
-
-            <button
-              onClick={handleContact}
-              className="px-6 py-3 bg-black text-white rounded-full hover:bg-[#1a1a1a] transition shadow-button-shadow"
-            >
-              Contact Us
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header loggedIn={true} showBack={true} />
 
       {/* -------- BODY LAYOUT -------- */}
-      <main className="w-[90%] mx-auto flex gap-8 py-10">
+      <main className="w-[92%] sm:w-[90%] max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-10 flex-1">
         {/* LEFT SIDEBAR */}
         <AccountSidebar
+          className="w-full lg:w-[35%] lg:max-w-[340px] shrink-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-md p-6 border border-transparent dark:border-neutral-800"
           loading={loading}
           profile={profile}
           onLogout={handleLogout}
@@ -221,12 +153,12 @@ export const MyAccountOrders = () => {
         />
 
         {/* RIGHT CONTENT AREA */}
-        <section className="flex-1 bg-white rounded-2xl shadow-md p-8">
+        <section className="flex-1 bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-2xl shadow-md p-5 sm:p-8">
           {/* Header */}
-          <div className="flex justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="font-bold text-lg">My Profile</h1>
-              <p className="text-xs text-gray-500">
+              <h1 className="font-bold text-lg text-gray-900 dark:text-white">My Profile</h1>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">
                 Update personal information and view activity
               </p>
             </div>
@@ -235,10 +167,10 @@ export const MyAccountOrders = () => {
             <button
               onClick={handleSave}
               disabled={!profileDirty || saving}
-              className={`px-6 py-3.5 rounded-[999px] shadow-button-shadow flex items-center justify-center text-sm transition-transform transition-colors ${
+              className={`px-6 py-3 rounded-[999px] shadow-button-shadow flex items-center justify-center text-sm font-medium transition-transform transition-colors self-start sm:self-auto ${
                 profileDirty && !saving
                   ? "bg-[#d21b1b] text-white cursor-pointer hover:bg-[#b61616] hover:scale-[1.02] active:scale-[0.98]"
-                  : "bg-[#f6d0d0] text-[#7a1b1b] cursor-default opacity-90"
+                  : "bg-[#f6d0d0] dark:bg-neutral-800 text-[#7a1b1b] dark:text-neutral-500 cursor-default opacity-90"
               }`}
             >
               {saving
@@ -251,7 +183,7 @@ export const MyAccountOrders = () => {
 
           {/* Personal details */}
           <div className="mt-6">
-            <h2 className="font-semibold mb-3">Personal Details</h2>
+            <h2 className="font-semibold mb-3 text-gray-900 dark:text-white">Personal Details</h2>
 
             {/* Both inputs same width and height */}
             <div className="flex flex-col gap-4 max-w-md w-full">
@@ -265,10 +197,10 @@ export const MyAccountOrders = () => {
                     setProfileDirty(true);
                   }}
                   disabled={!isEditingName}
-                  className={`w-full h-[42px] border border-[#0000001a] rounded-lg px-4 py-2 text-sm ${
+                  className={`w-full h-[42px] border border-[#0000001a] dark:border-neutral-700 rounded-lg px-4 py-2 text-sm outline-none transition ${
                     !isEditingName
-                      ? "bg-[#f7f7f7] cursor-not-allowed"
-                      : "bg-white"
+                      ? "bg-[#f7f7f7] dark:bg-neutral-800 text-gray-600 dark:text-neutral-400 cursor-not-allowed"
+                      : "bg-white dark:bg-neutral-900 text-gray-900 dark:text-white focus:border-[#c90202]"
                   }`}
                 />
                 <button
@@ -277,9 +209,9 @@ export const MyAccountOrders = () => {
                     setIsEditingName(true);
                     setIsSaved(false);
                   }}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition shrink-0"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition shrink-0"
                 >
-                  <img src={editIcon} className="w-4 h-4" alt="edit name" />
+                  <img src={editIcon} className="w-4 h-4 dark:invert" alt="edit name" />
                 </button>
               </div>
 
@@ -287,7 +219,7 @@ export const MyAccountOrders = () => {
               <input
                 value={profile.email}
                 readOnly
-                className="w-full h-[42px] border border-[#0000001a] rounded-lg px-4 py-2 text-sm bg-[#f7f7f7] cursor-not-allowed"
+                className="w-full h-[42px] border border-[#0000001a] dark:border-neutral-700 rounded-lg px-4 py-2 text-sm bg-[#f7f7f7] dark:bg-neutral-800 text-gray-600 dark:text-neutral-400 cursor-not-allowed outline-none"
               />
             </div>
           </div>
@@ -297,40 +229,40 @@ export const MyAccountOrders = () => {
 
           {/* ORDERS LIST */}
           <div className="mt-6 flex flex-col gap-3 text-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Your Orders & Reservations</h2>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Your Orders & Reservations</h2>
               <button
                 type="button"
                 onClick={handleReservations}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full border border-black hover:bg-black hover:text-white transition-colors"
+                className="text-xs font-semibold px-3 py-1.5 rounded-full border border-black dark:border-neutral-400 text-black dark:text-neutral-200 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
               >
                 Manage Reservations
               </button>
             </div>
             {loading ? (
-              <p className="text-xs text-gray-500">Loading orders...</p>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">Loading orders...</p>
             ) : orders.length === 0 ? (
-              <p className="text-xs text-gray-500">No orders yet.</p>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">No orders yet.</p>
             ) : (
               orders.map((order, i) => (
                 <div
                   key={order.id || i}
-                  className="border border-[#0000001a] rounded-xl p-4 flex items-center justify-between gap-4 hover:bg-[#fff9ef] transition"
+                  className="border border-[#0000001a] dark:border-neutral-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fff9ef] dark:hover:bg-neutral-800/60 transition"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
+                    <div className="w-14 h-14 bg-gray-200 dark:bg-neutral-800 rounded-lg flex items-center justify-center shrink-0 text-2xl">
                       📦
                     </div>
                     <div className="min-w-0">
                       {/* 🔹 Listing name as the main line */}
-                      <p className="font-semibold truncate">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">
                         {order.title || "Listing"}
                       </p>
                       {/* Order id + status below */}
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-neutral-400">
                         #{order.id || "—"} · {order.status || ""}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1">
                         {order.price != null ? `₹${order.price.toLocaleString("en-IN")}` : "Original price unavailable"}
                       </p>
                     </div>
@@ -338,7 +270,7 @@ export const MyAccountOrders = () => {
                   <button
                     type="button"
                     onClick={handleReservations}
-                    className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border border-black hover:bg-black hover:text-white transition-colors"
+                    className="self-start sm:self-auto shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border border-black dark:border-neutral-400 text-black dark:text-neutral-200 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                   >
                     View Status
                   </button>

@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import MagnifyingGlassIcon from "../assets/icons/MagnifyingGlass.svg";
-import BackButton from "../assets/icons/BackButton.svg";
+import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { API_BASE_URL } from "../config/api.js";
 
@@ -243,160 +242,104 @@ export const ProductDetail = ({ loggedIn }) => {
     }
   };
 
-  const makeThumb = (src) => {
-    const active = selectedImage === src;
-    return (
-      <button
-        key={src}
-        type="button"
-        onClick={() => setSelectedImage(src)}
-        className={`w-1/4 h-full rounded-lg overflow-hidden bg-[#f7f7f7] cursor-pointer transition-transform border ${
-          active ? "border-black" : "border-transparent"
-        } hover:scale-[1.03] active:scale-[0.98]`}
-      >
-        <img src={src} alt="Thumb" className="w-full h-full object-cover" />
-      </button>
-    );
-  };
-
-  const col1 = relatedListings.slice(0, 2);
-  const col2 = relatedListings.slice(2, 4);
-  const col3 = relatedListings.slice(4, 6);
-
   return (
-    <div className="bg-white w-full min-w-[1440px] min-h-[2115px] relative flex flex-col">
-      <div className="fixed top-6 left-6 z-30">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="cursor-pointer transition-transform hover:scale-[1.10] active:scale-[0.98]"
-        >
-          <img src={BackButton} alt="Back" className="w-6 h-6" />
-        </button>
-      </div>
+    <div className="bg-[#fbfbfb] dark:bg-[#0f0f11] text-black dark:text-white min-h-screen flex flex-col transition-colors">
+      {/* ---------- RESPONSIVE HEADER ---------- */}
+      <Header
+        loggedIn={isLogged}
+        showBack={true}
+        onBack={() => navigate(-1)}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        onSearch={handleSearch}
+      />
 
-      <header className="w-full h-[164px] bg-white flex items-center">
-        <div className="w-[90%] mx-auto flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate(isLogged ? "/landing-login" : "/")}
-            className="flex items-baseline gap-0 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-          >
-            <span className="text-[#c90202] font-subheading">Thapar</span>
-            <span className="text-black font-subheading">Kart</span>
-          </button>
-
-          <div className="flex items-center gap-4 lg:gap-8">
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/landing-login" : "/")}
-              className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            >
-              Home
-            </button>
-
-            <div className="hidden sm:flex w-[260px] md:w-[320px] lg:w-[360px] items-center justify-between px-4 py-2 rounded-[999px] border border-[#0000001a] bg-white focus-within:border-black transition">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search"
-                className="flex-1 bg-transparent outline-none font-body-text text-[#000000] placeholder:text-[#00000080]"
+      {/* ---------- MAIN PRODUCT CONTENT ---------- */}
+      <main id="product-top" className="flex-1 w-[92%] max-w-[1240px] mx-auto py-6 sm:py-10">
+        {/* Showcase: Image + Info side-by-side on desktop, stacked on mobile */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
+          {/* Images Gallery Column */}
+          <div className="w-full lg:w-[48%] flex flex-col gap-4">
+            {/* Main Image */}
+            <div className="w-full h-[300px] sm:h-[420px] lg:h-[480px] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/60 dark:border-neutral-800 shadow-sm flex items-center justify-center">
+              <img
+                src={selectedImage}
+                alt={selectedProduct.title}
+                className="w-full h-full object-cover transition-transform hover:scale-[1.02] duration-300"
               />
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="flex items-center justify-center cursor-pointer hover:scale-[1.05] active:scale-[0.95] transition-transform"
-              >
-                <img src={MagnifyingGlassIcon} alt="search" className="w-5 h-5" />
-              </button>
             </div>
 
-            {isLogged ? (
-              <button
-                type="button"
-                onClick={() => navigate("/my-account/orders")}
-                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
-              >
-                Account
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="font-body-text text-black cursor-pointer hover:text-[#c90202] transition-colors hover:scale-[1.02] active:scale-[0.98] transition-transform"
-              >
-                Login
-              </button>
+            {/* Thumbnail Carousel */}
+            {thumbSources && thumbSources.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                {thumbSources.map((src) => {
+                  const active = selectedImage === src;
+                  return (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => setSelectedImage(src)}
+                      className={`w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 cursor-pointer border-2 transition-all ${
+                        active
+                          ? "border-[#c90202] scale-102"
+                          : "border-transparent opacity-75 hover:opacity-100 hover:border-neutral-300 dark:hover:border-neutral-700"
+                      }`}
+                    >
+                      <img src={src} alt="Thumb" className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => navigate(isLogged ? "/about-login" : "/about")}
-              className="px-6 py-3.5 bg-black rounded-[999px] shadow-button-shadow cursor-pointer flex items-center justify-center hover:bg-[#1a1a1a] hover:scale-[1.02] active:scale-[0.98] transition-transform transition-colors"
-            >
-              <span className="font-small-text text-white">Contact Us</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 relative">
-        <div id="product-top">
-          <div className="absolute w-[40.56%] top-[50px] left-[9.10%] h-[438px] rounded-xl shadow-[0px_4px_6px_-4px_#0000001a,0px_10px_15px_-3px_#0000001a] overflow-hidden bg-[#f7f7f7]">
-            <img
-              src={selectedImage}
-              alt="Product main"
-              className="w-full h-full object-cover"
-            />
           </div>
 
-          <div className="flex flex-col w-[35.90%] items-start gap-[26px] absolute top-[50px] left-[58.68%]">
-            <div className="relative self-stretch mt-[-1.00px] [font-family:'Inter-SemiBold',Helvetica] font-semibold text-black text-[40px] tracking-[0] leading-[48.0px]">
+          {/* Details Column */}
+          <div className="flex-1 w-full flex flex-col gap-6">
+            <h1 className="font-semibold text-2xl sm:text-3xl lg:text-4xl leading-tight text-black dark:text-white">
               {selectedProduct.title}
+            </h1>
+
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-3">
+              {selectedProduct.category && (
+                <span className="px-4 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs sm:text-sm font-medium shadow-xs">
+                  {selectedProduct.category}
+                </span>
+              )}
+              {selectedProduct.condition && (
+                <span className="px-4 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs sm:text-sm font-medium shadow-xs">
+                  {selectedProduct.condition}
+                </span>
+              )}
             </div>
 
-            <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
-              {/* Category pill - auto width */}
-              <div className="flex items-center justify-center gap-2.5 px-[27px] py-[7px] relative rounded-[20px] border border-solid border-[#0000001f] hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-default whitespace-nowrap">
-                <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-subheading text-[#828282] whitespace-nowrap">
-                  {selectedProduct.category || "Category"}
-                </div>
-              </div>
-
-              {/* Condition pill - auto width */}
-              <div className="flex items-center justify-center gap-2.5 px-[27px] py-[7px] relative rounded-[20px] border border-solid border-[#0000001f] hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-default whitespace-nowrap">
-                <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-subheading text-[#828282] whitespace-nowrap">
-                  {selectedProduct.condition || "Condition"}
-                </div>
-              </div>
+            {/* Price */}
+            <div className="text-3xl sm:text-4xl font-bold text-[#c90202]">
+              {selectedProduct.price}
             </div>
 
-            <div className="relative self-stretch [font-family:'Inter-Medium',Helvetica] font-medium text-black text-2xl tracking-[0] leading-9">
-              Price: {selectedProduct.price}
+            {/* Description Box */}
+            <div className="p-5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400 mb-2">
+                Description
+              </h2>
+              <p className="text-neutral-700 dark:text-neutral-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                {loadingListing ? "Loading product details..." : selectedProduct.description}
+              </p>
             </div>
 
-            <div className="flex items-center justify-center gap-2.5 px-[40px] py-[24px] relative self-stretch w-full flex-[0_0_auto] ml-[-1.00px] mr-[-1.00px] rounded-[20px] border border-solid border-[#0000001f]">
-              <div className="relative flex items-center justify-center w-fit [font-family:'Inter-Regular',Helvetica] font-normal text-[#828282] text-lg tracking-[0] leading-[26px] text-center">
-                {loadingListing
-                  ? "Loading product details..."
-                  : selectedProduct.description}
-              </div>
-            </div>
-
-            {/* Reserve Item */}
-            <button
-              type="button"
-              disabled={isLogged && (!canReserve || isReserved || isReserving)}
-              onClick={handleReserve}
-              className={`all-[unset] box-border flex h-[52px] items-center justify-center gap-2 px-6 py-3.5 relative self-stretch w-full rounded-[20px] shadow-button-shadow transition-all duration-200 ease-in-out ${
-                isLogged && (!canReserve || isReserved || isReserving)
-                  ? "bg-[#555] opacity-60 cursor-default"
-                  : "bg-black cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-              }`}
-            >
-              <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
+            {/* Actions */}
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isLogged && (!canReserve || isReserved || isReserving)}
+                onClick={handleReserve}
+                className={`w-full py-4 rounded-full font-semibold text-base transition-all duration-200 shadow-button-shadow ${
+                  isLogged && (!canReserve || isReserved || isReserving)
+                    ? "bg-neutral-400 text-neutral-200 cursor-not-allowed opacity-60"
+                    : "bg-black text-white dark:bg-white dark:text-black cursor-pointer hover:bg-neutral-800 dark:hover:bg-neutral-200 hover:scale-[1.01] active:scale-[0.99]"
+                }`}
+              >
                 {!isLogged
                   ? "Reserve Item"
                   : !canReserve
@@ -406,183 +349,86 @@ export const ProductDetail = ({ loggedIn }) => {
                   : isReserved
                   ? "Reserved"
                   : "Reserve Item"}
-              </div>
-            </button>
+              </button>
 
-            <p className="relative flex items-center justify-center self-stretch font-small-text text-[#828282] text-center">
-              Once reserved, the seller will be notified to confirm your meetup
-              location. Payment happens in person — no fees or commissions.
-            </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center px-4">
+                Once reserved, the seller will be notified to confirm your meetup location. Payment happens in person — no fees or commissions.
+              </p>
 
-            {/* Chat With Seller */}
+              <button
+                type="button"
+                onClick={handleChatWithSeller}
+                className="w-full py-4 rounded-full font-semibold text-base bg-neutral-100 dark:bg-neutral-800 text-black dark:text-white border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              >
+                Chat With Seller
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- STUDENTS ALSO VIEWED ---------- */}
+        <section className="mt-16 sm:mt-24 border-t border-neutral-200 dark:border-neutral-800 pt-10">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
+              Students Also Viewed
+            </h2>
             <button
               type="button"
-              onClick={handleChatWithSeller}
-              className="all-[unset] box-border flex h-[52px] items-center justify-center gap-2 px-6 py-3.5 relative self-stretch w-full bg-black rounded-[20px] shadow-button-shadow transition-all duration-[0.2s] ease-[ease] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              onClick={() => navigate(isLogged ? "/listings-login" : "/listings")}
+              className="text-sm font-semibold text-[#c90202] hover:underline"
             >
-              <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
-                Chat With Seller
-              </div>
+              View More →
             </button>
           </div>
-        </div>
 
-        <div className="absolute w-[40.56%] top-[504px] left-[9.10%] h-[134px] flex gap-4">
-          {thumbSources.map(makeThumb)}
-        </div>
-
-        <div className="absolute w-[43.40%] top-[743px] left-[5.56%] [font-family:'Inter-SemiBold',Helvetica] font-semibold text-black text-[32px] tracking-[0] leading-[48px]">
-          Students Also Viewed
-        </div>
-
-        <div className="flex flex-col w-[89.03%] items-end gap-3.5 absolute top-[823px] left-[5.56%]">
-          <div className="relative self-stretch w-full h-[764px]">
-            {loadingRelated && (
-              <div className="absolute inset-0 flex items-center justify-center text-[#828282] font-body-text">
-                Loading recommendations...
-              </div>
-            )}
-
-            {!loadingRelated && relatedListings.length > 0 && (
-              <>
-                <div className="flex flex-col w-[31.51%] items-start gap-8 absolute top-0 left-[68.49%]">
-                  {col3.map((item) => (
-                    <div
-                      key={item._id}
-                      className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto]"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="relative self-stretch w-full h-[238px] rounded-lg bg-[linear-gradient(0deg,rgba(247,247,247,1)_0%,rgba(247,247,247,1)_100%)] cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0px_4px_10px_rgba(0,0,0,0.08)] overflow-hidden"
-                      >
-                        {Array.isArray(item.imageUrls) &&
-                          item.imageUrls[0] && (
-                            <img
-                              src={item.imageUrls[0]}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="text-left flex flex-col items-start gap-1 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                      >
-                        <div className="[font-family:'Inter-Medium',Helvetica] font-medium text-black text-2xl leading-9">
-                          {item.title}
-                        </div>
-                        <p className="font-body-text text-[#828282] line-clamp-2">
-                          {item.description}
-                        </p>
-                        <div className="font-body-text text-black">
-                          ₹{Number(item.price || 0).toLocaleString("en-IN")}
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-col w-[31.51%] items-start gap-8 absolute top-0 left-[34.24%]">
-                  {col2.map((item) => (
-                    <div
-                      key={item._id}
-                      className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto]"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="relative self-stretch w-full h-[238px] rounded-lg bg-[linear-gradient(0deg,rgba(247,247,247,1)_0%,rgba(247,247,247,1)_100%)] cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0px_4px_10px_rgba(0,0,0,0.08)] overflow-hidden"
-                      >
-                        {Array.isArray(item.imageUrls) &&
-                          item.imageUrls[0] && (
-                            <img
-                              src={item.imageUrls[0]}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="text-left flex flex-col items-start gap-1 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                      >
-                        <div className="[font-family:'Inter-Medium',Helvetica] font-medium text-black text-2xl leading-9">
-                          {item.title}
-                        </div>
-                        <p className="font-body-text text-[#828282] line-clamp-2">
-                          {item.description}
-                        </p>
-                        <div className="font-body-text text-black">
-                          ₹{Number(item.price || 0).toLocaleString("en-IN")}
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-col w-[31.51%] items-start gap-8 absolute top-0 left-0">
-                  {col1.map((item) => (
-                    <div
-                      key={item._id}
-                      className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto]"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="relative self-stretch w-full h-[238px] rounded-lg bg-[linear-gradient(0deg,rgba(247,247,247,1)_0%,rgba(247,247,247,1)_100%)] cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0px_4px_10px_rgba(0,0,0,0.08)] overflow-hidden"
-                      >
-                        {Array.isArray(item.imageUrls) &&
-                          item.imageUrls[0] && (
-                            <img
-                              src={item.imageUrls[0]}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleClickListingCard(item)}
-                        className="text-left flex flex-col items-start gap-1 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                      >
-                        <div className="[font-family:'Inter-Medium',Helvetica] font-medium text-black text-2xl leading-9">
-                          {item.title}
-                        </div>
-                        <p className="font-body-text text-[#828282] line-clamp-2">
-                          {item.description}
-                        </p>
-                        <div className="font-body-text text-black">
-                          ₹{Number(item.price || 0).toLocaleString("en-IN")}
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {!loadingRelated && relatedListings.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center text-[#828282] font-body-text">
-                No other listings yet.
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate(isLogged ? "/listings-login" : "/listings")}
-            className="all-[unset] box-border gap-2.5 px-6 py-[18px] absolute top-[778px] right-0 inline-flex items-center justify-center bg-black rounded-[20px] shadow-button-shadow cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
-          >
-            <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-small-text text-white">
-              View More
+          {loadingRelated ? (
+            <div className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              Loading recommendations...
             </div>
-          </button>
-        </div>
+          ) : relatedListings.length === 0 ? (
+            <div className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              No other listings yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {relatedListings.map((item) => (
+                <div
+                  key={item._id}
+                  onClick={() => handleClickListingCard(item)}
+                  className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/60 dark:border-neutral-800 shadow-xs hover:shadow-md overflow-hidden flex flex-col transition hover:translate-y-[-2px] cursor-pointer"
+                >
+                  <div
+                    className="relative h-44 bg-cover bg-center bg-neutral-100 dark:bg-neutral-800"
+                    style={{
+                      backgroundImage: `url(${
+                        item.imageUrls && item.imageUrls[0] ? item.imageUrls[0] : ""
+                      })`,
+                    }}
+                  />
+                  <div className="p-4 flex flex-col gap-2 flex-1">
+                    <h3 className="font-semibold text-base text-black dark:text-white line-clamp-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <div className="mt-auto pt-2 flex items-center justify-between">
+                      <span className="font-bold text-base text-[#c90202]">
+                        ₹{Number(item.price || 0).toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {item.category || "General"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
+      {/* ---------- FOOTER ---------- */}
       <Footer />
     </div>
   );
