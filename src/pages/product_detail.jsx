@@ -248,7 +248,7 @@ export const ProductDetail = ({ loggedIn }) => {
       <Header
         loggedIn={isLogged}
         showBack={true}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate(isLogged ? "/listings-login" : "/listings")}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearch={handleSearch}

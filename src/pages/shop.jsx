@@ -103,7 +103,7 @@ export const Shop = ({ loggedIn }) => {
               <div className="flex items-center gap-3 sm:gap-4">
                 <button
                   type="button"
-                  onClick={() => navigate(-1)}
+                  onClick={() => navigate(isLogged ? "/landing-login" : "/landing")}
                   className="cursor-pointer transition-transform hover:scale-110 p-1"
                   aria-label="Back"
                 >

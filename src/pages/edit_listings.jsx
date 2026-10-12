@@ -193,7 +193,7 @@ export const EditListings = () => {
 
   return (
     <div className="bg-white dark:bg-[#121212] min-h-screen flex flex-col text-gray-900 dark:text-neutral-100 transition-colors">
-      <Header loggedIn={true} showBack={true} />
+      <Header loggedIn={true} showBack={true} onBack={() => navigate("/my-listing")} />
 
       <main className="flex-1 py-6 sm:py-10">
         <section className="w-[92%] sm:w-[90%] max-w-[1100px] mx-auto">

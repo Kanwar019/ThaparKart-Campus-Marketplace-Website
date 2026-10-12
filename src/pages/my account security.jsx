@@ -150,7 +150,7 @@ export const MyAccountSecurity = () => {
   return (
     <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-neutral-100 min-h-screen flex flex-col transition-colors">
       {/* -------- HEADER -------- */}
-      <Header loggedIn={true} showBack={true} />
+      <Header loggedIn={true} showBack={true} onBack={() => navigate("/landing-login")} />
 
       {/* -------- BODY -------- */}
       <main className="w-[92%] sm:w-[90%] max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 py-6 sm:py-10 flex-1">

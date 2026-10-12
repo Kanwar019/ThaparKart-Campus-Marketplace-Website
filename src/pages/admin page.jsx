@@ -133,7 +133,7 @@ export const AdminPage = ({ authorized = true }) => {
     fetchRecentListings();
   }, [isAdmin]);
 
-  const handleBack = () => navigate(-1);
+  const handleBack = () => navigate("/landing-login");
   const handleHome = () => navigate("/landing-login");
 
   const formatDate = (iso) => {
@@ -213,7 +213,7 @@ export const AdminPage = ({ authorized = true }) => {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/landing-login")}
             className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-sm"
           >
             Go Back

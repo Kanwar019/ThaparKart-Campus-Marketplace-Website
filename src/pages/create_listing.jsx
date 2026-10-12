@@ -134,7 +134,7 @@ export const CreateListing = ({ loggedIn }) => {
   return (
     <div className="bg-white dark:bg-[#121212] min-h-screen flex flex-col text-gray-900 dark:text-neutral-100 transition-colors">
       {/* ---------- HEADER ---------- */}
-      <Header loggedIn={isLogged} showBack={isLogged} />
+      <Header loggedIn={isLogged} showBack={isLogged} onBack={() => navigate(isLogged ? "/listings-login" : "/listings")} />
 
       {/* ---------- MAIN CONTENT ---------- */}
       {!isLogged ? (

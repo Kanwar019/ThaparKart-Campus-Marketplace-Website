@@ -322,7 +322,7 @@ export const AllListing = ({ loggedIn }) => {
       <Header
         loggedIn={isLogged}
         showBack={true}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate(isLogged ? "/landing-login" : "/landing")}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearch={handleSearch}

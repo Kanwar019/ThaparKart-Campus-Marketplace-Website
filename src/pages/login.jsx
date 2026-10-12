@@ -1,5 +1,5 @@
 // src/pages/login.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import image1 from "../assets/image-1.png";
@@ -29,6 +29,22 @@ export const Login = () => {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  // If already logged in, redirect to keep session active
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const savedEmail = localStorage.getItem("userEmail");
+      const isAdmin = localStorage.getItem("isAdmin") === "true";
+      if (token || savedEmail) {
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/landing-login", { replace: true });
+        }
+      }
+    } catch {}
+  }, [navigate]);
 
   const handleLogin = async () => {
     if (!email.endsWith("@thapar.edu")) {
@@ -81,9 +97,9 @@ export const Login = () => {
       }
 
       if (isAdmin) {
-        navigate("/admin");
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/landing-login");
+        navigate("/landing-login", { replace: true });
       }
     } catch (err) {
       console.error("Login network/server error:", err);
@@ -172,7 +188,16 @@ export const Login = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => navigate("/landing")}
+            onClick={() => {
+              const token = localStorage.getItem("authToken");
+              const savedEmail = localStorage.getItem("userEmail");
+              const isAdmin = localStorage.getItem("isAdmin") === "true";
+              if (token || savedEmail) {
+                navigate(isAdmin ? "/admin" : "/landing-login");
+              } else {
+                navigate("/landing");
+              }
+            }}
             className="cursor-pointer transition-transform hover:scale-110 p-1"
             aria-label="Back"
           >

@@ -21,6 +21,18 @@ export const Register = () => {
 
   const navigate = useNavigate();
 
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const savedEmail = localStorage.getItem("userEmail");
+      const isAdmin = localStorage.getItem("isAdmin") === "true";
+      if (token || savedEmail) {
+        navigate(isAdmin ? "/admin" : "/landing-login", { replace: true });
+      }
+    } catch {}
+  }, [navigate]);
+
   // Handle countdown timer
   useEffect(() => {
     if (!isOtpCooldown || cooldownSeconds <= 0) return;
@@ -135,7 +147,7 @@ export const Register = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/login")}
             className="cursor-pointer transition-transform hover:scale-110 p-1"
             aria-label="Back"
           >

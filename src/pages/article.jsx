@@ -18,7 +18,7 @@ export const Article = ({ loggedIn }) => {
   return (
     <div className="bg-white dark:bg-[#121212] min-h-screen flex flex-col text-gray-900 dark:text-neutral-100 transition-colors">
       {/* TOP NAV */}
-      <Header loggedIn={isLogged} showBack={true} />
+      <Header loggedIn={isLogged} showBack={true} onBack={() => navigate(isLogged ? "/landing-login" : "/landing")} />
 
       {/* MAIN CONTENT */}
       <main className="flex-1">

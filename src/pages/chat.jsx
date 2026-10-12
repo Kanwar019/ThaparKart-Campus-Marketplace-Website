@@ -248,7 +248,7 @@ export const Chat = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(currentUser ? "/landing-login" : "/")}
             className="flex items-center hover:opacity-80 p-1"
             aria-label="Back"
           >

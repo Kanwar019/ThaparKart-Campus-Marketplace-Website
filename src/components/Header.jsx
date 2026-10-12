@@ -30,24 +30,34 @@ export const Header = ({
   const searchValue = controlledSearch !== undefined ? controlledSearch : internalSearch;
   const setSearchValue = onSearchChange || setInternalSearch;
 
+  const isAuth =
+    loggedIn ||
+    Boolean(
+      typeof localStorage !== "undefined" &&
+        (localStorage.getItem("authToken") || localStorage.getItem("userEmail"))
+    );
+  const isAdmin =
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("isAdmin") === "true";
+
   const handleSearch = () => {
     setMobileMenuOpen(false);
     setShowMobileSearch(false);
     if (onSearch) {
       onSearch(searchValue);
     } else {
-      navigate(listingSearchUrl(loggedIn, { search: searchValue }));
+      navigate(listingSearchUrl(isAuth, { search: searchValue }));
     }
   };
 
   const handleHome = () => {
     setMobileMenuOpen(false);
-    navigate(loggedIn ? "/landing-login" : "/landing");
+    navigate(isAuth ? "/landing-login" : "/landing");
   };
 
   const handleAccount = () => {
     setMobileMenuOpen(false);
-    navigate(loggedIn ? "/my-account/orders" : "/login");
+    navigate(isAuth ? "/my-account/orders" : "/login");
   };
 
   const handleContact = () => {
@@ -59,7 +69,15 @@ export const Header = ({
         return;
       }
     }
-    navigate(loggedIn ? "/about-login" : "/about");
+    navigate(isAuth ? "/about-login" : "/about");
+  };
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    navigate(isAuth ? "/landing-login" : "/landing");
   };
 
   return (
@@ -72,7 +90,7 @@ export const Header = ({
           {showBack && (
             <button
               type="button"
-              onClick={onBack || (() => navigate(-1))}
+              onClick={handleBack}
               className="cursor-pointer hover:opacity-70 transition-opacity p-1"
               aria-label="Go back"
             >
@@ -122,8 +140,18 @@ export const Header = ({
             Home
           </button>
 
-          {/* Account / Login */}
-          {loggedIn ? (
+          {/* Admin / Account / Login */}
+          {isAuth && isAdmin && (
+            <button
+              type="button"
+              onClick={() => navigate("/admin")}
+              className="font-body-text text-black dark:text-neutral-200 cursor-pointer hover:text-[#c90202] dark:hover:text-[#c90202] transition-colors"
+            >
+              Admin
+            </button>
+          )}
+
+          {isAuth ? (
             <button
               type="button"
               onClick={handleAccount}
@@ -262,7 +290,20 @@ export const Header = ({
               Home
             </button>
 
-            {loggedIn ? (
+            {isAuth && isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate("/admin");
+                }}
+                className="text-left py-2 font-medium text-lg text-[#c90202] hover:opacity-80 transition"
+              >
+                Admin Panel
+              </button>
+            )}
+
+            {isAuth ? (
               <button
                 type="button"
                 onClick={handleAccount}
