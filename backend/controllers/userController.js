@@ -154,6 +154,10 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: "This account uses Google sign-in and has no ThaparKart password to change." });
+    }
+
     // Check if old password is correct
     const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
     if (!isMatch) {

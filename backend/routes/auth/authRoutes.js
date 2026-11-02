@@ -1,5 +1,6 @@
 // backend/routes/authRoutes.js
 import { Router } from "express";
+import { googleLogin } from "../../controllers/googleAuthController.js";
 import {
   registerUser,
   loginUser,
@@ -16,6 +17,8 @@ import {
 } from "../../middleware/rateLimitMiddleware.js";
 
 const router = Router();
+
+router.post("/google", loginLimiter, googleLogin);
 
 // POST /api/auth/register
 router.post("/register", otpVerifyLimiter, registerUser);
