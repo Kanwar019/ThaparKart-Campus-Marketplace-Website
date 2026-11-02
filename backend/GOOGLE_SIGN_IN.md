@@ -37,6 +37,6 @@ The server uses Google's library to validate the token signature, issuer, audien
 
 If the college blocks third-party apps, request permission from its administrator; do not relax identity verification. A missing `hd` or a different organizational domain must be investigated before changing the accepted domain. Tests use mocked identity verification and database operations, so live Google consent and delivery of the frontend token require the setup above.
 
-Legacy OTP endpoints remain for compatibility, but the login/registration UI no longer depends on them. Google-only accounts have no local password; the profile password-change action returns a clear explanation for them.
+Legacy email registration, OTP and password-reset endpoints now return HTTP 410 with Google sign-in guidance. Google-only accounts see a Google sign-in explanation instead of the password-change form. Existing password users retain login and authenticated password changes. See AUTH_MIGRATION.md for environment cleanup.
 
 Official references: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid and https://developers.google.com/identity/gsi/web/guides/verify-google-id-token.

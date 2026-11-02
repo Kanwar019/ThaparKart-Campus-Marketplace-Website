@@ -5,7 +5,7 @@ import Order from "../models/Order.js";
 import bcrypt from "bcryptjs";
 
 // GET /api/profile
-export const getProfile = (req, res) => {
+export const getProfile = async (req, res) => {
   // authRequired already attached req.user
   if (!req.user) {
     return res.status(401).json({ message: "Not authenticated" });
@@ -19,6 +19,13 @@ export const getProfile = (req, res) => {
     req.user.role === "admin" ||
     ADMIN_EMAILS.includes(req.user.email?.toLowerCase());
 
+  let hasPassword;
+  try {
+    hasPassword = Boolean(await User.exists({ _id: req.user._id, passwordHash: { $type: "string", $ne: "" } }));
+  } catch {
+    return res.status(500).json({ message: "Unable to load account settings. Please try again." });
+  }
+
   return res.json({
     id: req.user._id.toString(),
     _id: req.user._id.toString(),
@@ -26,6 +33,7 @@ export const getProfile = (req, res) => {
     email: req.user.email || "",
     role: req.user.role || (isAdmin ? "admin" : "user"),
     isAdmin,
+    hasPassword,
   });
 };
 

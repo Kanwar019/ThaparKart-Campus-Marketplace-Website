@@ -1,16 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { env } from "node:process";
-import { once } from "node:events";
-import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import Otp from "../models/Otp.js";
 import { loginUser } from "../controllers/authController.js";
 import { authRequired } from "../middleware/authMiddleware.js";
-import authRoutes from "../routes/auth/authRoutes.js";
-import { otpVerifyLimiter } from "../middleware/rateLimitMiddleware.js";
 
 const user = {
   _id: "000000000000000000000001", name: "Test User",
@@ -77,35 +72,4 @@ test("configured login token authenticates protected requests", async (t) => {
   let allowed = false;
   await authRequired({ cookies: { token } }, response(), () => { allowed = true; });
   assert.equal(allowed, true);
-});
-
-test("registration and OTP verification share an attempt budget", { timeout: 5000 }, async (t) => {
-  const lookup = t.mock.method(Otp, "findOne", async () => null);
-  const app = express();
-  app.use(express.json());
-  app.use("/api/auth", authRoutes);
-  const server = app.listen(0, "127.0.0.1");
-  t.after(async () => {
-    otpVerifyLimiter.resetKey("127.0.0.1");
-    await new Promise((resolve) => server.close(resolve));
-  });
-  await once(server, "listening");
-  const url = `http://127.0.0.1:${server.address().port}/api/auth`;
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const result = await fetch(`${url}/register`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Test", email: user.email, password: "test-password", otp: "123456" }),
-    });
-    assert.equal(result.status, 400);
-    await result.json();
-  }
-  for (const path of ["register", "verify-otp"]) {
-    const result = await fetch(`${url}/${path}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Test", email: user.email, password: "test-password", otp: "123456" }),
-    });
-    assert.equal(result.status, 429);
-    await result.json();
-  }
-  assert.equal(lookup.mock.callCount(), 10, "Blocked attempts must not check the OTP database");
 });

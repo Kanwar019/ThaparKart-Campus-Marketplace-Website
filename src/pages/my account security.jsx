@@ -19,6 +19,7 @@ export const MyAccountSecurity = () => {
   const [displayName, setDisplayName] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [email, setEmail] = useState("");
+  const [hasPassword, setHasPassword] = useState(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [profileDirty, setProfileDirty] = useState(false);
@@ -60,6 +61,7 @@ export const MyAccountSecurity = () => {
         setDisplayName(data.name || "");
         setNameInput(data.name || "");
         setEmail(data.email || "");
+        setHasPassword(typeof data.hasPassword === "boolean" ? data.hasPassword : null);
       } catch (err) {
         console.error("Error fetching profile:", err);
       } finally {
@@ -235,7 +237,13 @@ export const MyAccountSecurity = () => {
 
           {/* SECURITY SECTION */}
           <div className="mt-6 flex flex-col gap-4 max-w-md">
-            <h2 className="font-semibold text-sm text-gray-900 dark:text-white">Change Password</h2>
+            <h2 className="font-semibold text-sm text-gray-900 dark:text-white">{hasPassword === false ? "Google sign-in" : "Change Password"}</h2>
+            {hasPassword === false ? (
+              <p className="text-sm text-gray-600 dark:text-neutral-400">You sign in with your college Google account. There is no separate ThaparKart password to change.</p>
+            ) : hasPassword === null ? (
+              <p role="status" className="text-sm text-gray-600 dark:text-neutral-400">{profileLoading ? "Loading sign-in settings…" : "Unable to load sign-in settings. Please refresh this page."}</p>
+            ) : (<>
+
 
             <input
               type="password"
@@ -288,6 +296,7 @@ export const MyAccountSecurity = () => {
             >
               {passwordSaved && !passwordDirty ? "Saved" : "Save Changes"}
             </button>
+            </>)}
           </div>
         </section>
       </main>

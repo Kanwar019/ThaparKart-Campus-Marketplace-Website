@@ -3,13 +3,14 @@ import { test } from "node:test";
 import User from "../models/User.js";
 import { getProfile } from "../controllers/userController.js";
 
-test("profile includes the authenticated user ID without exposing credentials", () => {
+test("profile includes the authenticated user ID without exposing credentials", async (t) => {
+  t.mock.method(User, "exists", async () => ({ _id: "fixture" }));
   const user = new User({
     _id: "000000000000000000000001", name: "Test", email: "test@thapar.edu",
     passwordHash: "private", role: "user",
   });
   let body;
-  getProfile({ user }, { json(value) { body = value; } });
+  await getProfile({ user }, { json(value) { body = value; } });
   assert.equal(body._id, "000000000000000000000001");
   assert.equal(body.id, "000000000000000000000001");
   assert.equal(body.name, "Test");

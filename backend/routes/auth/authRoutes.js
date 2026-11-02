@@ -1,42 +1,16 @@
-// backend/routes/authRoutes.js
 import { Router } from "express";
 import { googleLogin } from "../../controllers/googleAuthController.js";
-import {
-  registerUser,
-  loginUser,
-  logoutUser,
-  sendOtp,
-  verifyOtp,
-  resetPassword,
-} from "../../controllers/authController.js";
-import {
-  otpLimiter,
-  otpVerifyLimiter,
-  loginLimiter,
-  passwordResetLimiter,
-} from "../../middleware/rateLimitMiddleware.js";
+import { loginUser, logoutUser } from "../../controllers/authController.js";
+import { loginLimiter } from "../../middleware/rateLimitMiddleware.js";
 
 const router = Router();
-
 router.post("/google", loginLimiter, googleLogin);
-
-// POST /api/auth/register
-router.post("/register", otpVerifyLimiter, registerUser);
-
-// POST /api/auth/login (with rate limiting)
 router.post("/login", loginLimiter, loginUser);
-
-// POST /api/auth/logout
 router.post("/logout", logoutUser);
 
-// POST /api/auth/send-otp (with rate limiting)
-router.post("/send-otp", otpLimiter, sendOtp);
-
-// POST /api/auth/verify-otp (with rate limiting)
-router.post("/verify-otp", otpVerifyLimiter, verifyOtp);
-
-// POST /api/auth/reset-password (with rate limiting)
-router.post("/reset-password", passwordResetLimiter, resetPassword);
+// Explicit migration response for old clients; no mail or database operations.
+router.post(["/register", "/send-otp", "/verify-otp", "/reset-password", "/forgot-password"], (_req, res) => {
+  res.status(410).json({ message: "Email OTP registration and password recovery have been retired. Please use Continue with Google with your @thapar.edu account." });
+});
 
 export default router;
-
