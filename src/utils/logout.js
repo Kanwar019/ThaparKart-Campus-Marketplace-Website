@@ -1,4 +1,4 @@
-import { getAuthHeaders } from "../config/api.js";
+import { getAuthHeaders, clearTemporaryAuthToken } from "../config/api.js";
 
 export async function logout(apiBaseUrl, navigate) {
   try {
@@ -13,6 +13,7 @@ export async function logout(apiBaseUrl, navigate) {
     return;
   }
 
+  clearTemporaryAuthToken();
   try {
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("authToken");

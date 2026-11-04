@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, saveAuthToken } from '../config/api.js';
 
 let scriptPromise;
 function loadGoogle() {
@@ -53,11 +53,11 @@ export default function GoogleSignIn() {
             if (!response.ok) throw new Error(data.message || 'Google sign-in failed. Please try again.');
             if (!data.token || !data.user?.email) throw new Error('Sign-in response was incomplete. Please try again.');
             if (!active) return;
+            saveAuthToken(data.token);
             try {
-              localStorage.setItem('authToken', data.token);
               localStorage.setItem('userEmail', data.user.email);
               localStorage.setItem('isAdmin', data.isAdmin ? 'true' : 'false');
-            } catch { /* The HTTP-only session cookie remains available. */ }
+            } catch { /* Optional display preferences; authentication is already saved. */ }
             navigate('/landing-login', { replace: true });
           } catch (failure) {
             if (active) setError(failure.name === 'TimeoutError' ? 'The server took too long to respond. Please try again.' : failure.message);

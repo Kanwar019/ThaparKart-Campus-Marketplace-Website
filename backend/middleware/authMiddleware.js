@@ -14,7 +14,8 @@ export const authRequired = async (req, res, next) => {
       bearerToken = null;
     }
 
-    const token = req.cookies?.token || bearerToken;
+    // Explicit credentials take precedence over a stale browser cookie.
+    const token = bearerToken || req.cookies?.token;
 
     if (!token) {
       return res.status(401).json({ message: "Not authenticated." });

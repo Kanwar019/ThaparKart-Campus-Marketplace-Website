@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import image1 from "../assets/image-1.png";
 import BackButton from "../assets/icons/BackButton.svg";
 
-import { API_BASE_URL } from "../config/api.js";
+import { API_BASE_URL, saveAuthToken } from "../config/api.js";
 import "../styles/Login.css";
 import GoogleSignIn from "../components/GoogleSignIn.jsx";
 
@@ -64,12 +64,11 @@ export const Login = () => {
         data.user?.role === "admin" ||
         ADMIN_EMAILS.includes(lowerEmail);
 
+      if (data.token) saveAuthToken(data.token);
       try {
         localStorage.setItem("userEmail", lowerEmail);
         localStorage.setItem("isAdmin", isAdmin ? "true" : "false");
-        if (data.token) {
-          localStorage.setItem("authToken", data.token);
-        }
+
       } catch (e) {
         console.warn("Could not save to localStorage:", e);
       }

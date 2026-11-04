@@ -73,3 +73,22 @@ test("configured login token authenticates protected requests", async (t) => {
   await authRequired({ cookies: { token } }, response(), () => { allowed = true; });
   assert.equal(allowed, true);
 });
+
+test("fresh bearer token works even when an old cookie is expired", async (t) => {
+  configure(t, secret);
+  const fresh = jwt.sign({ userId: user._id }, secret, { expiresIn: "1h" });
+  const expired = jwt.sign({ userId: user._id }, secret, { expiresIn: -1 });
+  let allowed = false;
+  await authRequired({ cookies: { token: expired }, headers: { authorization: `Bearer ${fresh}` } }, response(), () => { allowed = true; });
+  assert.equal(allowed, true);
+});
+
+test("an invalid explicit bearer token cannot borrow a valid cookie session", async (t) => {
+  configure(t, secret);
+  const valid = jwt.sign({ userId: user._id }, secret);
+  const res = response();
+  let allowed = false;
+  await authRequired({ cookies: { token: valid }, headers: { authorization: "Bearer invalid" } }, res, () => { allowed = true; });
+  assert.equal(allowed, false);
+  assert.equal(res.statusCode, 401);
+});

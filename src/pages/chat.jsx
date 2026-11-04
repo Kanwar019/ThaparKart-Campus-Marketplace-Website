@@ -7,7 +7,7 @@ import avatarImg from "../assets/icons/avatar.svg";
 
 import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
 import { useTheme } from "../contexts/ThemeContext.jsx";
-import "../styles/Chat.css";
+
 
 export const Chat = () => {
   const navigate = useNavigate();
@@ -147,7 +147,7 @@ export const Chat = () => {
     refreshRef.current = refreshChat;
     void refreshChat();
 
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("authToken") : null;
+    const token = getAuthHeaders().Authorization?.slice(7);
     const socket = io(API_BASE_URL, {
       withCredentials: true,
       auth: token ? { token } : undefined,

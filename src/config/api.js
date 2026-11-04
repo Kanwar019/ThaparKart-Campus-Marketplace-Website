@@ -23,17 +23,6 @@ export const API_BASE_URL =
   DEFAULT_API_BASE_URL;
 
 
-export const getAuthHeaders = () => {
-  try {
-    if (typeof localStorage !== "undefined") {
-      const token = localStorage.getItem("authToken");
-      if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
-        return { Authorization: `Bearer ${token}` };
-      }
-    }
-  } catch {}
-  return {};
-};
+export { saveAuthToken, clearTemporaryAuthToken, getAuthHeaders, readStoredValue } from "../utils/authSession.js";
 
 export default API_BASE_URL;
-

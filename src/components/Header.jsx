@@ -1,3 +1,4 @@
+import { readStoredValue, getAuthHeaders } from "../utils/authSession.js";
 // src/components/Header.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,16 +34,15 @@ export const Header = ({
   const isAuth =
     loggedIn ||
     Boolean(
-      typeof localStorage !== "undefined" &&
-        (localStorage.getItem("authToken") || localStorage.getItem("userEmail"))
+      getAuthHeaders().Authorization || readStoredValue("userEmail")
     );
   const ADMIN_EMAILS = [
     "ksingh2_be23@thapar.edu",
     "ybhansali_be23@thapar.edu",
   ];
-  const userEmail = typeof localStorage !== "undefined" ? localStorage.getItem("userEmail") || "" : "";
+  const userEmail = readStoredValue("userEmail");
   const isEmailAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()));
-  const isStoredAdmin = typeof localStorage !== "undefined" && localStorage.getItem("isAdmin") === "true";
+  const isStoredAdmin = readStoredValue("isAdmin") === "true";
   const isAdmin = Boolean(isAuth && (isStoredAdmin || isEmailAdmin));
 
   const handleSearch = () => {

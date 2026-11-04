@@ -1,3 +1,4 @@
+import { readStoredValue } from "../utils/authSession.js";
 // src/components/AccountSidebar.jsx
 import React from "react";
 import avatarImg from "../assets/icons/avatar.svg";
@@ -15,9 +16,9 @@ export const AccountSidebar = ({
     "ksingh2_be23@thapar.edu",
     "ybhansali_be23@thapar.edu",
   ];
-  const userEmail = profile.email || (typeof localStorage !== "undefined" ? localStorage.getItem("userEmail") || "" : "");
+  const userEmail = profile.email || (readStoredValue("userEmail"));
   const isEmailAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()));
-  const isStoredAdmin = typeof localStorage !== "undefined" && localStorage.getItem("isAdmin") === "true";
+  const isStoredAdmin = readStoredValue("isAdmin") === "true";
   const userIsAdmin = Boolean(
     profile.isAdmin ||
     profile.role === "admin" ||
