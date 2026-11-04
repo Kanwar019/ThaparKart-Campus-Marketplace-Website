@@ -179,3 +179,40 @@ for (const [name, actor, listingStatus, expected] of [
     assert.equal(state.order.buyer, buyer);
   });
 }
+
+test("cancelling releases the listing for a different buyer", async (t) => {
+  const state = database(t);
+  const cancelled = response();
+  await controller.updateOrderStatus({ user: { _id: buyer }, params: { id: orderId },
+    body: { action: "cancel", expectedStatus: "Reserved" } }, cancelled);
+  assert.equal(cancelled.statusCode, 200);
+  assert.equal(state.listing.status, "active");
+  const reserved = response();
+  await controller.createOrder({ user: { _id: outsider }, body: { listingId } }, reserved);
+  assert.equal(reserved.statusCode, 201);
+  assert.equal(state.order.buyer, outsider);
+  assert.equal(state.listing.status, "reserved");
+});
+
+test("completed pickup cannot be reserved again", async (t) => {
+  const state = database(t, { status: "Pending Pickup" });
+  const completed = response();
+  await controller.updateOrderStatus({ user: { _id: seller }, params: { id: orderId },
+    body: { action: "complete", expectedStatus: "Pending Pickup" } }, completed);
+  assert.equal(completed.statusCode, 200);
+  const reserved = response();
+  await controller.createOrder({ user: { _id: outsider }, body: { listingId } }, reserved);
+  assert.equal(reserved.statusCode, 409);
+  assert.equal(state.order.status, "Completed");
+  assert.equal(state.listing.status, "sold");
+});
+
+test("buyers only receive their own reservations", async (t) => {
+  t.mock.method(Order, "find", (filter) => {
+    assert.deepEqual(filter, { buyer });
+    return { populate() { return this; }, sort: async () => [] };
+  });
+  const res = response();
+  await controller.getMyOrders({ user: { _id: buyer } }, res);
+  assert.deepEqual(res.body, []);
+});

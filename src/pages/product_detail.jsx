@@ -1,5 +1,5 @@
 // src/pages/product_detail.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { Header } from "../components/Header.jsx";
@@ -28,7 +28,10 @@ export const ProductDetail = ({ loggedIn }) => {
   const isLogged = loggedIn ?? (location?.pathname.includes("-login") || false);
 
   const productFromState = location.state?.product || null;
-  const listingId = location.state?.listingId || null;
+  const listingId = location.state?.listingId || productFromState?._id || null;
+  const currentListingId = useRef(listingId);
+  currentListingId.current = listingId;
+  const reservingRef = useRef(false);
 
   const [selectedProduct, setSelectedProduct] = useState(
     productFromState || initialProduct
@@ -43,7 +46,7 @@ export const ProductDetail = ({ loggedIn }) => {
       ? productFromState.imageUrls
       : initialProduct.imageUrls
   );
-  const [isReserved, setIsReserved] = useState(false);
+  const [availability, setAvailability] = useState({ id: null, status: "loading" });
   const [isReserving, setIsReserving] = useState(false);
 
   const [loadingListing, setLoadingListing] = useState(false);
@@ -69,18 +72,23 @@ export const ProductDetail = ({ loggedIn }) => {
   useEffect(() => {
     if (!listingId) return;
 
+    let active = true;
+    const controller = new AbortController();
+    setAvailability({ id: listingId, status: "loading" });
+
     const fetchListing = async () => {
       try {
         setLoadingListing(true);
 
         const res = await fetch(
-          `${API_BASE_URL}/api/listings/${listingId}`
+          `${API_BASE_URL}/api/listings/${listingId}`, { signal: controller.signal }
         );
         if (!res.ok) {
           throw new Error("Failed to load listing");
         }
 
         const data = await res.json();
+        if (!active) return;
 
         const imageUrls =
           Array.isArray(data.imageUrls) && data.imageUrls.length > 0
@@ -101,15 +109,19 @@ export const ProductDetail = ({ loggedIn }) => {
         setSelectedProduct(mapped);
         setSelectedImage(mapped.mainImage);
         setThumbSources(mapped.imageUrls);
-        setIsReserved(false);
+        setAvailability({ id: listingId, status: data.status });
       } catch (err) {
-        console.error("Error fetching listing by id:", err);
+        if (active) {
+          setAvailability({ id: listingId, status: "unavailable" });
+          console.error("Error fetching listing by id:", err);
+        }
       } finally {
-        setLoadingListing(false);
+        if (active) setLoadingListing(false);
       }
     };
 
     fetchListing();
+    return () => { active = false; controller.abort(); };
   }, [listingId]);
 
   useEffect(() => {
@@ -158,14 +170,21 @@ export const ProductDetail = ({ loggedIn }) => {
 
   const effectiveListingId =
     listingId || (productFromState && productFromState._id) || null;
-  const canReserve = Boolean(effectiveListingId);
+  const listingStatus = availability.id === effectiveListingId ? availability.status : "loading";
+  const canReserve = Boolean(effectiveListingId) && listingStatus === "active";
+  const reservationLabel = !effectiveListingId ? "Reservation not available"
+    : listingStatus === "loading" ? "Loading availability..."
+    : listingStatus === "reserved" ? "Reserved"
+    : listingStatus === "sold" ? "Sold"
+    : "Reservation not available";
 
   const handleReserve = async () => {
     if (!isLogged) {
       navigate("/login");
       return;
     }
-    if (!canReserve || isReserved || isReserving) return;
+    if (!canReserve || reservingRef.current) return;
+    reservingRef.current = true;
 
     try {
       setIsReserving(true);
@@ -178,6 +197,7 @@ export const ProductDetail = ({ loggedIn }) => {
       });
 
       const data = await res.json().catch(() => ({}));
+      if (currentListingId.current !== effectiveListingId) return;
 
       if (res.status === 401) {
         alert("Your session has expired. Please log in again.");
@@ -187,18 +207,21 @@ export const ProductDetail = ({ loggedIn }) => {
 
       if (!res.ok) {
         alert(data.message || "Failed to reserve item. Please try again.");
-        if (data.message && data.message.includes("already reserved")) {
-          setIsReserved(true);
+        if (res.status === 409) {
+          setAvailability({ id: effectiveListingId, status: "unavailable" });
         }
         return;
       }
 
-      setIsReserved(true);
+      setAvailability({ id: effectiveListingId, status: "reserved" });
       alert("Item reserved successfully! You can see it in My Reserved Items.");
     } catch (err) {
       console.error("Error creating reservation:", err);
-      alert("Could not connect to server. Please try again.");
+      if (currentListingId.current === effectiveListingId) {
+        alert("Could not confirm your reservation. Check My Reserved Items before retrying.");
+      }
     } finally {
+      reservingRef.current = false;
       setIsReserving(false);
     }
   };
@@ -332,27 +355,25 @@ export const ProductDetail = ({ loggedIn }) => {
             <div className="flex flex-col gap-3 pt-2">
               <button
                 type="button"
-                disabled={isLogged && (!canReserve || isReserved || isReserving)}
+                disabled={isLogged && (!canReserve || isReserving)}
                 onClick={handleReserve}
                 className={`w-full py-4 rounded-full font-semibold text-base transition-all duration-200 shadow-button-shadow ${
-                  isLogged && (!canReserve || isReserved || isReserving)
+                  isLogged && (!canReserve || isReserving)
                     ? "bg-neutral-400 text-neutral-200 cursor-not-allowed opacity-60"
                     : "bg-black text-white dark:bg-white dark:text-black cursor-pointer hover:bg-neutral-800 dark:hover:bg-neutral-200 hover:scale-[1.01] active:scale-[0.99]"
                 }`}
               >
                 {!isLogged
                   ? "Reserve Item"
-                  : !canReserve
-                  ? "Reservation not available"
                   : isReserving
                   ? "Reserving..."
-                  : isReserved
-                  ? "Reserved"
+                  : !canReserve
+                  ? reservationLabel
                   : "Reserve Item"}
               </button>
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center px-4">
-                Once reserved, the seller will be notified to confirm your meetup location. Payment happens in person — no fees or commissions.
+                Once reserved, your request appears in the seller's reservations. Chat with the seller to arrange pickup. Payment happens in person — no fees or commissions.
               </p>
 
               <button
