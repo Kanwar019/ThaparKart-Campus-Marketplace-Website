@@ -1,9 +1,11 @@
 // src/pages/create_listing.jsx
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
+
+import { listingFormError, readListingImages } from "../utils/listingForm.js";
 
 import "../styles/Create_a_Listing.css";
 import "../styles/Create_a_Listing_with_Login.css";
@@ -20,66 +22,43 @@ export const CreateListing = ({ loggedIn }) => {
   const [description, setDescription] = useState("");
 
   const [imagePreviews, setImagePreviews] = useState([]); // strings (base64/data URLs)
+  const busyRef = useRef(false);
+  const readingRef = useRef(false);
+  const [readingImages, setReadingImages] = useState(false);
   const [posted, setPosted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
-
-    // limit to 5 images total
-    const remainingSlots = 5 - imagePreviews.length;
-    if (remainingSlots <= 0) {
-      alert("You can upload up to 5 images only.");
-      return;
+  const handleFileChange = async (e) => {
+    const input = e.target;
+    const files = Array.from(input.files || []);
+    if (!files.length || busyRef.current || readingRef.current) return;
+    readingRef.current = true;
+    setReadingImages(true);
+    try {
+      const results = await readListingImages(files, imagePreviews.length);
+      setImagePreviews((previous) => [...previous, ...results]);
+      setPosted(false);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      input.value = "";
+      readingRef.current = false;
+      setReadingImages(false);
     }
-
-    const filesToRead = selected.slice(0, remainingSlots);
-
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-    const validFiles = [];
-    for (const file of filesToRead) {
-      if (!file.type || !file.type.startsWith("image/")) {
-        alert(`${file.name} is not a supported image file.`);
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        alert(`${file.name} exceeds the 2MB size limit.`);
-        continue;
-      }
-      validFiles.push(file);
-    }
-    if (!validFiles.length) {
-      e.target.value = "";
-      return;
-    }
-
-    const readers = validFiles.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    );
-
-    Promise.all(readers)
-      .then((results) => {
-        setImagePreviews((prev) => [...prev, ...results]);
-        e.target.value = "";
-      })
-      .catch((err) => console.error("Error reading files:", err));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busyRef.current || readingRef.current) return;
+    const error = listingFormError({ title, price, description, category, condition });
+    if (error) { alert(error); return; }
 
-    if (!title || !category || !condition || !price || !description) {
+    if (!title || !category || !condition || !price || !description.trim()) {
       alert("Please fill in all required fields before posting.");
       return;
     }
 
+    busyRef.current = true;
     try {
       setSubmitting(true);
       setPosted(false);
@@ -125,8 +104,9 @@ export const CreateListing = ({ loggedIn }) => {
       setImagePreviews([]);
     } catch (err) {
       console.error("Error creating listing:", err);
-      alert("Could not connect to server. Please try again.");
+      alert("Could not confirm posting. Check My Listings before retrying; your draft is still here.");
     } finally {
+      busyRef.current = false;
       setSubmitting(false);
     }
   };
@@ -183,7 +163,8 @@ export const CreateListing = ({ loggedIn }) => {
               </div>
 
               {/* FORM */}
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} onChange={() => setPosted(false)}>
+                <fieldset disabled={submitting || readingImages} className="space-y-6 min-w-0 border-0 p-0 m-0">
                 {/* Item Title */}
                 <div className="space-y-2">
                   <label className="text-[11px] md:text-xs font-medium text-black dark:text-neutral-200">
@@ -297,7 +278,7 @@ export const CreateListing = ({ loggedIn }) => {
                   <label className="block w-full rounded-[20px] border border-dashed border-[#e5e5e5] dark:border-neutral-700 bg-white dark:bg-neutral-800/40 py-6 px-4 text-center cursor-pointer hover:border-[#c90202] transition-colors">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
                       multiple
                       className="hidden"
                       onChange={handleFileChange}
@@ -307,7 +288,7 @@ export const CreateListing = ({ loggedIn }) => {
                         Click to upload
                       </div>
                       <div className="text-[#777777] dark:text-neutral-400">
-                        or drag and drop &nbsp;•&nbsp; PNG, JPG, GIF up to 10MB
+                        PNG, JPEG, WebP, GIF or SVG up to 2MB each
                       </div>
                       <div className="text-[11px] text-[#999999] dark:text-neutral-500">
                         You can add up to 5 photos.
@@ -351,7 +332,7 @@ export const CreateListing = ({ loggedIn }) => {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={posted || submitting}
+                    disabled={posted || submitting || readingImages}
                     className={`px-6 py-3 rounded-[20px] text-sm md:text-[15px] font-medium shadow-button-shadow cursor-pointer transition-transform transition-colors
                       ${
                         posted
@@ -366,6 +347,7 @@ export const CreateListing = ({ loggedIn }) => {
                       : "Post Listing"}
                   </button>
                 </div>
+                </fieldset>
               </form>
             </div>
           </section>

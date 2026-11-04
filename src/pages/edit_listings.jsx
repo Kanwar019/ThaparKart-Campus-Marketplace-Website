@@ -1,15 +1,23 @@
 // src/pages/edit_listings.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/Header.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { API_BASE_URL, getAuthHeaders } from "../config/api.js";
+
+import { listingFormError, readListingImages } from "../utils/listingForm.js";
 
 import "../styles/Edit_Listings.css";
 
 export const EditListings = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // /edit-listings/:id
+
+  const currentId = useRef(id);
+  currentId.current = id;
+  const [loadedId, setLoadedId] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -18,19 +26,29 @@ export const EditListings = () => {
   const [description, setDescription] = useState("");
 
   const [imagePreviews, setImagePreviews] = useState([]); // what we show
+  const busyRef = useRef(false);
+  const readingRef = useRef(false);
+  const [readingImages, setReadingImages] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loadingListing, setLoadingListing] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    setNotFound(false);
+    setLoadError("");
+    setLoadedId(null);
     const fetchListing = async () => {
       try {
         setLoadingListing(true);
         const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
-          credentials: "include",
+          credentials: "include", signal: controller.signal,
           headers: { ...getAuthHeaders() },
         });
 
+        if (!active) return;
+        if (res.status === 401) { navigate("/login"); return; }
         if (res.status === 404) {
           setNotFound(true);
           return;
@@ -41,6 +59,8 @@ export const EditListings = () => {
         }
 
         const data = await res.json();
+        if (!active) return;
+        if (data.status !== "active") throw new Error("Only available listings can be edited. Manage any reservation first.");
 
         setTitle(data.title || "");
         setCategory(data.category || "");
@@ -57,63 +77,37 @@ export const EditListings = () => {
           setImagePreviews([]);
         }
         setSaved(false);
+        setLoadedId(id);
       } catch (err) {
-        console.error("Error loading listing:", err);
+        if (active) setLoadError(err.message || "Could not load your listing. Please reload to retry.");
       } finally {
-        setLoadingListing(false);
+        if (active) setLoadingListing(false);
       }
     };
 
     fetchListing();
-  }, [id]);
+    return () => { active = false; controller.abort(); };
+  }, [id, navigate]);
 
-  const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
-
-    const remainingSlots = 5 - imagePreviews.length;
-    if (remainingSlots <= 0) {
-      alert("You can upload up to 5 images only.");
-      return;
+  const handleFileChange = async (e) => {
+    const input = e.target;
+    const files = Array.from(input.files || []);
+    if (!files.length || busyRef.current || readingRef.current) return;
+    readingRef.current = true;
+    setReadingImages(true);
+    const imageListingId = id;
+    try {
+      const results = await readListingImages(files, imagePreviews.length);
+      if (currentId.current !== imageListingId) return;
+      setImagePreviews((previous) => [...previous, ...results]);
+      setSaved(false);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      input.value = "";
+      readingRef.current = false;
+      setReadingImages(false);
     }
-
-    const filesToRead = selected.slice(0, remainingSlots);
-
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-    const validFiles = [];
-    for (const file of filesToRead) {
-      if (!file.type || !file.type.startsWith("image/")) {
-        alert(`${file.name} is not a supported image file.`);
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        alert(`${file.name} exceeds the 2MB size limit.`);
-        continue;
-      }
-      validFiles.push(file);
-    }
-    if (!validFiles.length) {
-      e.target.value = "";
-      return;
-    }
-
-    const readers = validFiles.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    );
-
-    Promise.all(readers)
-      .then((results) => {
-        setImagePreviews((prev) => [...prev, ...results]);
-        setSaved(false);
-        e.target.value = "";
-      })
-      .catch((err) => console.error("Error reading files:", err));
   };
 
   const handleRemoveImage = (index) => {
@@ -123,12 +117,18 @@ export const EditListings = () => {
 
   const handleSaveChanges = async (e) => {
     e.preventDefault();
+    if (busyRef.current || readingRef.current || loadedId !== id) return;
+    const error = listingFormError({ title, price, description, category, condition });
+    if (error) { alert(error); return; }
+    busyRef.current = true;
+    setSaving(true);
+    setSaved(false);
 
     try {
       const body = {
         title: title.trim(),
         description: description.trim(),
-        price: price ? Number(price) : 0,
+        price: Number(price),
         category,
         condition,
         imageUrls: imagePreviews,
@@ -144,6 +144,8 @@ export const EditListings = () => {
         body: JSON.stringify(body),
       });
 
+      if (currentId.current !== id) return;
+      if (res.status === 401) { navigate("/login"); return; }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         alert(
@@ -155,15 +157,21 @@ export const EditListings = () => {
       setSaved(true);
     } catch (err) {
       console.error("Error saving listing:", err);
-      alert("Could not connect to server. Please try again.");
+      alert("Could not confirm the change. Reload the listing before retrying; your draft is still here.");
+    } finally {
+      busyRef.current = false;
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
+    if (busyRef.current || readingRef.current || loadedId !== id) return;
     const ok = window.confirm(
       "Are you sure you want to delete this listing? This action cannot be undone."
     );
     if (!ok) return;
+    busyRef.current = true;
+    setSaving(true);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
@@ -172,6 +180,8 @@ export const EditListings = () => {
         headers: { ...getAuthHeaders() },
       });
 
+      if (currentId.current !== id) return;
+      if (res.status === 401) { navigate("/login"); return; }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         alert(
@@ -183,7 +193,10 @@ export const EditListings = () => {
       navigate("/my-listing");
     } catch (err) {
       console.error("Error deleting listing:", err);
-      alert("Could not connect to server. Please try again.");
+      alert("Could not confirm the change. Reload the listing before retrying; your draft is still here.");
+    } finally {
+      busyRef.current = false;
+      setSaving(false);
     }
   };
 
@@ -197,10 +210,12 @@ export const EditListings = () => {
 
       <main className="flex-1 py-6 sm:py-10">
         <section className="w-[92%] sm:w-[90%] max-w-[1100px] mx-auto">
-          {loadingListing ? (
+          {loadingListing || (loadedId !== id && !loadError && !notFound) ? (
             <div className="bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600 dark:text-neutral-400">
               Loading your listing…
             </div>
+          ) : loadError ? (
+            <div role="alert" className="px-6 py-10 text-center text-sm">{loadError}</div>
           ) : notFound ? (
             <div className="bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 rounded-[24px] shadow-[0px_6px_20px_rgba(0,0,0,0.08)] px-6 py-10 text-center text-sm text-gray-600 dark:text-neutral-400">
               Listing not found. Please go back to{" "}
@@ -225,7 +240,8 @@ export const EditListings = () => {
                 </p>
               </div>
 
-              <form className="space-y-6" onSubmit={handleSaveChanges}>
+              <form onSubmit={handleSaveChanges}>
+                <fieldset disabled={saving || readingImages} className="space-y-6 min-w-0 border-0 p-0 m-0">
                 <div className="space-y-3">
                   <p className="text-sm md:text-[15px] font-medium text-[#0d1b2a] dark:text-neutral-200">
                     Photos (Add up to 5)
@@ -234,14 +250,14 @@ export const EditListings = () => {
                   <label className="block w-full rounded-2xl border-2 border-dashed border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800/40 py-6 px-4 text-center cursor-pointer hover:border-[#c90202] transition-colors">
                     <input
                       type="file"
-                      accept=".png,.jpg,.jpeg,.webp,.gif,image/*"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
                       multiple
                       className="hidden"
                       onChange={handleFileChange}
                     />
                     <div className="flex flex-col items-center gap-1 text-xs md:text-[13px]">
                       <div className="font-semibold text-[#0d1b2a] dark:text-white">
-                        Drag and drop your images here or click to browse.
+                        Click to browse images (up to 2MB each).
                       </div>
                       <div className="text-[#777777] dark:text-neutral-400">
                         Add a great photo to sell your item faster!
@@ -405,7 +421,7 @@ export const EditListings = () => {
                           : "bg-[#c90202] text-white hover:bg-[#a10101] hover:scale-[1.02] active:scale-[0.98]"
                       }`}
                     >
-                      {saved ? "Saved" : "Save Changes"}
+                      {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
                     </button>
 
                     <button
@@ -417,6 +433,7 @@ export const EditListings = () => {
                     </button>
                   </div>
                 </div>
+                </fieldset>
               </form>
             </div>
           )}
