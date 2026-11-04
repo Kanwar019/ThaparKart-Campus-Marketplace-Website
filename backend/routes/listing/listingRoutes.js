@@ -10,10 +10,13 @@ import {
   getMyListings,       // ✅
 } from "../../controllers/listingController.js";
 
+import { getListingSuggestions } from "../../controllers/listingSuggestions.js";
+
 const router = express.Router();
 
 router.get("/", getAllListings);
 router.get("/mine", authRequired, getMyListings); // ✅ used in frontend
+router.get("/suggestions", getListingSuggestions);
 router.get("/:id", getListingById);
 
 router.post("/", authRequired, createListing, );

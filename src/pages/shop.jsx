@@ -1,3 +1,4 @@
+import ListingSearchBox from "../components/ListingSearchBox.jsx";
 // src/pages/Shop.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -131,19 +132,9 @@ export const Shop = ({ loggedIn }) => {
                 </button>
 
                 {/* Desktop Search bar */}
-                <div className="flex w-[260px] lg:w-[340px] items-center justify-between px-4 py-2 rounded-full border border-white/40 bg-white/10 backdrop-blur-xs focus-within:border-white transition">
-                  <input
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    placeholder="Search"
-                    className="flex-1 bg-transparent outline-none text-white placeholder:text-white/70 text-sm"
-                  />
-                  <button type="button" onClick={handleSearch} className="p-0.5">
-                    <HealthiconsMagnifyingGlassOutline className="w-5 h-5 invert" />
-                  </button>
-                </div>
+                <ListingSearchBox value={searchValue} onChange={setSearchValue} onSearch={handleSearch}
+            loggedIn={isLogged} onSelected={() => setShowMobileSearch(false)}
+            className="flex w-[260px] lg:w-[340px] items-center justify-between px-4 py-2 rounded-full border border-white/40 bg-white/10 backdrop-blur-xs focus-within:border-white transition" inputClassName="text-white placeholder:text-white/70" iconClassName="invert" />
 
                 {isLogged ? (
                   <button
@@ -241,21 +232,10 @@ export const Shop = ({ loggedIn }) => {
 
             {/* Mobile search input */}
             {showMobileSearch && (
-              <div className="md:hidden mt-4 bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 animate-fadeIn">
-                <div className="flex items-center px-4 py-2 rounded-full border border-white/40 bg-white/10">
-                  <input
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    placeholder="Search listings..."
-                    className="flex-1 bg-transparent outline-none text-white placeholder:text-white/70 text-sm"
-                    autoFocus
-                  />
-                  <button type="button" onClick={handleSearch} className="p-1">
-                    <HealthiconsMagnifyingGlassOutline className="w-5 h-5 invert" />
-                  </button>
-                </div>
+              <div className="relative z-30 md:hidden mt-4 bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 animate-fadeIn">
+                <ListingSearchBox value={searchValue} onChange={setSearchValue} onSearch={handleSearch}
+            loggedIn={isLogged} onSelected={() => setShowMobileSearch(false)} autoFocus placeholder="Search listings..."
+            className="flex items-center px-4 py-2 rounded-full border border-white/40 bg-white/10" inputClassName="text-white placeholder:text-white/70" iconClassName="invert" />
               </div>
             )}
 

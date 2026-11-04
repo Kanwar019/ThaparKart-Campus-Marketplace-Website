@@ -1,3 +1,4 @@
+import ListingSearchBox from "./ListingSearchBox.jsx";
 import { readStoredValue, getAuthHeaders } from "../utils/authSession.js";
 // src/components/Header.jsx
 import React, { useState } from "react";
@@ -87,7 +88,7 @@ export const Header = ({
 
   return (
     <header
-      className={`w-full ${heightClass} bg-white dark:bg-[#121212] border-b border-transparent dark:border-neutral-800 flex items-center transition-colors ${shadowClass}`}
+      className={`relative z-30 w-full ${heightClass} bg-white dark:bg-[#121212] border-b border-transparent dark:border-neutral-800 flex items-center transition-colors ${shadowClass}`}
     >
       <div className="w-[92%] max-w-[1300px] mx-auto flex items-center justify-between gap-4">
         {/* Left: Back (optional) + Logo */}
@@ -116,24 +117,9 @@ export const Header = ({
         </div>
 
         {/* Center / Desktop Search Bar */}
-        <div className="hidden sm:flex flex-1 max-w-[380px] mx-4 items-center justify-between px-4 py-2 rounded-full border border-[#0000001a] dark:border-neutral-700 bg-white dark:bg-neutral-900 focus-within:border-black dark:focus-within:border-neutral-400 transition-colors">
-          <input
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Search"
-            className="flex-1 bg-transparent outline-none font-body-text text-black dark:text-white placeholder:text-[#00000080] dark:placeholder:text-neutral-400 text-sm"
-          />
-          <button
-            type="button"
-            onClick={handleSearch}
-            className="flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform"
-            aria-label="Search"
-          >
-            <HealthiconsMagnifyingGlassOutline className="w-5 h-5 dark:invert" />
-          </button>
-        </div>
+        <ListingSearchBox value={searchValue} onChange={setSearchValue} onSearch={handleSearch}
+            loggedIn={isAuth} onSelected={() => setShowMobileSearch(false)}
+            className="hidden sm:flex flex-1 max-w-[380px] mx-4 items-center justify-between px-4 py-2 rounded-full border border-[#0000001a] dark:border-neutral-700 bg-white dark:bg-neutral-900 focus-within:border-black dark:focus-within:border-neutral-400 transition-colors" inputClassName="text-black dark:text-white placeholder:text-neutral-400" iconClassName="dark:invert" />
 
         {/* Right Desktop Nav */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6 shrink-0">
@@ -266,20 +252,9 @@ export const Header = ({
       {/* Expandable Mobile Search Field */}
       {showMobileSearch && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-[#121212] border-b border-neutral-200 dark:border-neutral-800 p-4 shadow-md z-40">
-          <div className="flex items-center px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Search listings..."
-              className="flex-1 bg-transparent outline-none text-black dark:text-white placeholder:text-neutral-400 text-sm"
-              autoFocus
-            />
-            <button type="button" onClick={handleSearch} className="p-1">
-              <HealthiconsMagnifyingGlassOutline className="w-5 h-5 dark:invert" />
-            </button>
-          </div>
+          <ListingSearchBox value={searchValue} onChange={setSearchValue} onSearch={handleSearch}
+            loggedIn={isAuth} onSelected={() => setShowMobileSearch(false)} autoFocus placeholder="Search listings..."
+            className="flex items-center px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900" inputClassName="text-black dark:text-white placeholder:text-neutral-400" iconClassName="dark:invert" />
         </div>
       )}
 
