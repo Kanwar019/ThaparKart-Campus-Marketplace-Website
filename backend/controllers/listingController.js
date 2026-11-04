@@ -87,7 +87,7 @@ export const getListingById = async (req, res) => {
     const { id } = req.params;
     const listing = await Listing.findById(id).populate("user", "name email");
 
-    if (!listing) {
+    if (!listing || listing.status === "deleted") {
       return res.status(404).json({ message: "Listing not found" });
     }
 
