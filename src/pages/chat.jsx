@@ -64,6 +64,7 @@ export const Chat = () => {
     let active = true;
     let refreshQueued = false;
     let refreshRunning = false;
+    let selectionInitialized = false;
 
     const refreshChat = async () => {
       refreshQueued = true;
@@ -87,7 +88,10 @@ export const Chat = () => {
           const result = await conversationsRes.json();
           const loaded = Array.isArray(result.conversations) ? result.conversations : [];
           const activeId = selectedIdRef.current;
-          const targetId = activeId || incomingChatId || loaded[0]?.id || null;
+          const targetId = activeId || (
+            selectionInitialized ? null : incomingChatId || loaded[0]?.id || null
+          );
+          selectionInitialized = true;
 
           if (!activeId && targetId) {
             selectedIdRef.current = targetId;
@@ -103,7 +107,7 @@ export const Chat = () => {
             continue;
           }
 
-          const messagesRes = await fetch(`${API_BASE_URL}/api/chat/messages/${targetId}`, {
+          const messagesRes = await fetch(`${API_BASE_URL}/api/chat/${targetId}/messages`, {
             credentials: "include",
             headers: { ...getAuthHeaders() },
           });
@@ -163,33 +167,9 @@ export const Chat = () => {
       setSocketConnected(false);
     });
 
-    socket.on("chat:message", (data) => {
-      if (data.chatId === selectedIdRef.current) {
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id !== data.chatId) return c;
-            return {
-              ...c,
-              messages: [...(c.messages || []), data.message],
-              preview: data.message.text,
-              time: data.message.time,
-            };
-          })
-        );
-      } else {
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === data.chatId
-              ? {
-                  ...c,
-                  preview: data.message.text,
-                  time: data.message.time,
-                  unread: (c.unread || 0) + 1,
-                }
-              : c
-          )
-        );
-      }
+    socket.on("message", () => {
+      // Reload authoritative history and unread counts, including new conversations.
+      void refreshRef.current?.();
     });
 
     return () => {
